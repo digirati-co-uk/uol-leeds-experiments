@@ -15,7 +15,7 @@ jobs:
         with:
           image-name: "preservation-api"
           dockerfile: "./Preservation.API/Dockerfile"
-          context: "LeedsExperiment/"
+          context: "./LeedsExperiment/"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   build-push-dashboard:
@@ -26,7 +26,7 @@ jobs:
         with:
           image-name: "dashboard"      
           dockerfile: "./Dashboard/Dockerfile"
-          context: "LeedsExperiment/"
+          context: "./LeedsExperiment/"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
  
