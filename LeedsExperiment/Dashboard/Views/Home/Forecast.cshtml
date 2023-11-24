@@ -1,0 +1,36 @@
+﻿@model Preservation.API.WeatherForecast
+
+@{
+    ViewData["Title"] = "Forecast";
+}
+
+<h1>Forecast</h1>
+
+<div>
+    <h4>WeatherForecast</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.TemperatureC)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.TemperatureC)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.TemperatureF)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.TemperatureF)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Summary)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Summary)
+        </dd>
+    </dl>
+</div>
+<div>
+    @Html.ActionLink("Edit", "Edit", new { /* id = Model.PrimaryKey */ }) |
+    <a asp-action="Index">Back to List</a>
+</div>

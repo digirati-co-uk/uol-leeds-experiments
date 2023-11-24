@@ -1,0 +1,6 @@
+@Preservation.API_HostAddress = http://localhost:5014
+
+GET {{Preservation.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
