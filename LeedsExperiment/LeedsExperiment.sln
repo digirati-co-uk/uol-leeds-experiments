@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34316.72
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fedora", "Fedora\Fedora.csproj", "{FD75F6AB-7539-42DA-A795-885BDF5F12C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fedora", "Fedora\Fedora.csproj", "{FD75F6AB-7539-42DA-A795-885BDF5F12C8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Preservation.API", "Preservation.API\Preservation.API.csproj", "{451C0CF8-0A92-451B-BADC-D3194D3BD464}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Preservation.API", "Preservation.API\Preservation.API.csproj", "{451C0CF8-0A92-451B-BADC-D3194D3BD464}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dashboard", "Dashboard\Dashboard.csproj", "{8D0AC003-CEDE-4330-98C4-E3205FDB4267}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dashboard", "Dashboard\Dashboard.csproj", "{8D0AC003-CEDE-4330-98C4-E3205FDB4267}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Preservation", "Preservation\Preservation.csproj", "{7CB531B6-49AE-4969-ACBF-321E2BC8B179}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{8D0AC003-CEDE-4330-98C4-E3205FDB4267}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D0AC003-CEDE-4330-98C4-E3205FDB4267}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D0AC003-CEDE-4330-98C4-E3205FDB4267}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CB531B6-49AE-4969-ACBF-321E2BC8B179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CB531B6-49AE-4969-ACBF-321E2BC8B179}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CB531B6-49AE-4969-ACBF-321E2BC8B179}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CB531B6-49AE-4969-ACBF-321E2BC8B179}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

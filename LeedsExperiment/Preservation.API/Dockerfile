@@ -17,7 +17,7 @@ RUN dotnet build "./Preservation.API.csproj" -c $BUILD_CONFIGURATION -o /app/bui
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Preservation.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false /p:ErrorOnDuplicatePublishOutputFiles=false
+RUN dotnet publish "./Preservation.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app

@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fedora\Fedora.csproj" />
-    <ProjectReference Include="..\Preservation.API\Preservation.API.csproj" />
+    <ProjectReference Include="..\Preservation\Preservation.csproj" />
   </ItemGroup>
 
 </Project>
