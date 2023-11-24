@@ -1,0 +1,32 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build-push-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-build-and-push
+        name: build and push
+        with:
+          image-name: "preservation-api"
+          dockerfile: "Dockerfile"
+          context: "./LeedsExperiment/Preservation.API"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-push-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-build-and-push
+        with:
+          image-name: "dashboard"
+          dockerfile: "Dockerfile"
+          context: "./LeedsExperiment/Dashboard"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+ 
