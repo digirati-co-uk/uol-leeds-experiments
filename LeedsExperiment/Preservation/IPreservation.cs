@@ -2,6 +2,6 @@
 {
     public interface IPreservation
     {
-        Task<WeatherForecast[]> GetWeatherForecasts();
+        Task<WeatherForecast[]> Test();
     }
 }

@@ -26,7 +26,7 @@ namespace Dashboard.Controllers
 
         public async Task<IActionResult> ForecastAsync()
         {
-            var forecasts = await preservation.GetWeatherForecasts();
+            var forecasts = await preservation.Test();
             return View(forecasts[0]);
         }
 

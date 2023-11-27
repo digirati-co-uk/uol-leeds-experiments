@@ -11,9 +11,9 @@ namespace Preservation.API
             _httpClient = httpClient;
         }
 
-        public async Task<WeatherForecast[]> GetWeatherForecasts()
+        public async Task<WeatherForecast[]> Test()
         {
-            var response = await _httpClient.GetAsync("/WeatherForecast");
+            var response = await _httpClient.GetAsync("/api/test");
             var forecasts = await response.Content.ReadFromJsonAsync<WeatherForecast[]>();
             if(forecasts != null)
             {
