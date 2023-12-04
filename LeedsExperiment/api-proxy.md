@@ -32,4 +32,8 @@ Shown here with `@context` collapsed:
 
 <img width="566" alt="image" src="https://github.com/digirati-co-uk/uol-leeds-experiments/assets/1443575/db72689a-d200-4359-946f-ac373ac6bac2">
 
+One last addition:
+
+https://uol.digirati.io/api/fedora/application/ld+json/tom_test_basic_container?jsonld=compacted&contained=true
+
 
