@@ -1,4 +1,4 @@
-﻿namespace Fedora;
+﻿namespace Fedora.Vocab;
 
 public static class Prefer
 {
@@ -30,5 +30,5 @@ public static class Prefer
     /// <summary>
     /// Embed "child" resources in the returned representation
     /// </summary>
-    public const string PreferContainedDescriptions = "http://www.w3.org/ns/oa#PreferContainedDescriptions";  	
+    public const string PreferContainedDescriptions = "http://www.w3.org/ns/oa#PreferContainedDescriptions";
 }

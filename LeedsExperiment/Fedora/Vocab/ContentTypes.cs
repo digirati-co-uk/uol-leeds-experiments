@@ -1,4 +1,4 @@
-﻿namespace Fedora;
+﻿namespace Fedora.Vocab;
 
 public static class ContentTypes
 {

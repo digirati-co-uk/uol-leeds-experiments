@@ -10,7 +10,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHttpClient<IFedora, Preservation.Fedora>(client =>
+builder.Services.AddHttpClient<IFedora, Preservation.FedoraWrapper>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["FedoraApiRoot"]!);
     var authHeader = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(

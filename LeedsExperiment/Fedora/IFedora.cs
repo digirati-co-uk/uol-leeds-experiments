@@ -8,7 +8,8 @@ namespace Fedora
 {
     public interface IFedora
     {
-        public Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false);
+        Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false);
+        Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name);
 
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Fedora;
+using Fedora.Vocab;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Preservation.API.Controllers
@@ -32,5 +33,7 @@ namespace Preservation.API.Controllers
             var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained);
             return Content(result, contentType);
         }
+
+        public 
     }
 }
