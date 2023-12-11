@@ -12,6 +12,7 @@ namespace Fedora.ApiModel
         public DateTime Expires { get; set; }
         public bool Expired { get; set; }
         public bool Committed { get; set; }
+        public bool RolledBack { get; set; }
 
         public const string HeaderName = "Atomic-ID";
     }
