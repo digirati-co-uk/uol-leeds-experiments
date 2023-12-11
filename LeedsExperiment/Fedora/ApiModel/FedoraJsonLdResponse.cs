@@ -10,7 +10,7 @@ public class FedoraJsonLdResponse
 
     [JsonPropertyName("@id")]
     [JsonPropertyOrder(1)]
-    public string? Id { get; set; }
+    public string Id { get; set; }
 
     [JsonPropertyName("@type")]
     [JsonPropertyOrder(2)]
@@ -34,6 +34,9 @@ public class FedoraJsonLdResponse
 
     // Our custom(ish) additions
 
+    /// <summary>
+    /// Assumes we are using dc:title and that Fedora maps it to title
+    /// </summary>
     [JsonPropertyName("title")]
     [JsonPropertyOrder(101)]
     public string? Title { get; set; }

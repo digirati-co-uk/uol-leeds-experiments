@@ -37,7 +37,7 @@ namespace SamplesWorker
         private async Task DoDefault()
         {
             // Console.WriteLine("supply something");
-            await fedora.CreateArchivalGroup("ag-root", Now(), "But same title");
+            await fedora.CreateArchivalGroup("ag-demo-root", Now(), "This is the title");
         }
 
         private async Task OcflV1()
@@ -45,6 +45,7 @@ namespace SamplesWorker
             var path = @"C:\Users\TomCrane\Dropbox\digirati\leeds\fedora-experiments\versioned-example\working\v1";
 
             // begin transaction
+            var transaction = await fedora.BeginTransaction();
 
             // make an archival group named Now()
 

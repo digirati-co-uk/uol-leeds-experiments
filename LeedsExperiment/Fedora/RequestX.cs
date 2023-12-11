@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using Fedora.ApiModel;
 using Fedora.Vocab;
 
 namespace Fedora
@@ -26,11 +27,21 @@ namespace Fedora
             return requestMessage;
         }
 
+        public static HttpRequestMessage InTransaction(this HttpRequestMessage requestMessage, Transaction? transaction)
+        {
+            if(transaction != null)
+            {
+                requestMessage.Headers.Add(Transaction.HeaderName, transaction.Location.ToString());
+            }
+            return requestMessage;
+        }
+
         public static HttpRequestMessage WithName(this HttpRequestMessage requestMessage, string? name)
         {
             if(requestMessage.Content == null && !string.IsNullOrWhiteSpace(name)) 
             {
-                requestMessage.Content = new StringContent($"PREFIX dc: <http://purl.org/dc/elements/1.1/>  <> dc:title \"{name}\"");
+                var turtle = MediaTypeHeaderValue.Parse("text/turtle");
+                requestMessage.Content = new StringContent($"PREFIX dc: <http://purl.org/dc/elements/1.1/>  <> dc:title \"{name}\"", turtle);
             }
             return requestMessage;
         }
@@ -38,6 +49,12 @@ namespace Fedora
         public static HttpRequestMessage WithSlug(this HttpRequestMessage requestMessage, string slug) 
         {
             requestMessage.Headers.Add("slug", slug);
+            return requestMessage;
+        }
+
+        public static HttpRequestMessage AsArchivalGroup(this HttpRequestMessage requestMessage)
+        {
+            requestMessage.Headers.Add("Link", $"<{RepositoryTypes.ArchivalGroup}>;rel=\"type\"");
             return requestMessage;
         }
     }

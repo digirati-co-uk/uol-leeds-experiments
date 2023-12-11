@@ -33,7 +33,6 @@ namespace Preservation.API.Controllers
             var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained);
             return Content(result, contentType);
         }
-
-        public 
+        
     }
 }

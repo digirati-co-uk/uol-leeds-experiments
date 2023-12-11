@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Fedora.ApiModel;
 
 namespace Fedora
 {
     public class File : Resource
     {
+        public File(FedoraJsonLdResponse jsonLdResponse) : base(jsonLdResponse)
+        {
+        }
 
-        public string Origin { get
+        public string Origin 
+        { 
+            get
             {
                 return "origin";
             } 
