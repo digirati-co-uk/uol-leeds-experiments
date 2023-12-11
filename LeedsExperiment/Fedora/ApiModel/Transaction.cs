@@ -8,7 +8,7 @@ namespace Fedora.ApiModel
 {
     public class Transaction
     {
-        public Uri Location { get; set; }
+        public required Uri Location { get; set; }
         public DateTime Expires { get; set; }
         public bool Expired { get; set; }
         public bool Committed { get; set; }

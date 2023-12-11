@@ -79,8 +79,10 @@ public class FedoraWrapper : IFedora
         var req = MakeHttpRequestMessage("fcr:tx", HttpMethod.Post);
         var response = await _httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
-        var tx = new Transaction();
-        tx.Location = response.Headers.Location!;
+        var tx = new Transaction
+        {
+            Location = response.Headers.Location!
+        };
         if (response.Headers.TryGetValues("Atomic-Expires", out IEnumerable<string>? values))
         {
             tx.Expires = DateTime.Parse(values.First());
