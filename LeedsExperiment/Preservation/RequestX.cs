@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Mime;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net.Http.Headers;
 using Fedora.ApiModel;
 using Fedora.Vocab;
 
-namespace Fedora
+namespace Preservation
 {
     public static class RequestX
     {
@@ -46,6 +40,24 @@ namespace Fedora
             return requestMessage;
         }
 
+        public static HttpRequestMessage WithContentDisposition(this HttpRequestMessage requestMessage, string? contentDisposition)
+        {
+            if (!string.IsNullOrWhiteSpace(contentDisposition))
+            {
+                requestMessage.Headers.Add("Content-Disposition", $"attachment; filename=\"{contentDisposition}\""); 
+            }
+            return requestMessage;
+        }
+
+        public static HttpRequestMessage WithDigest(this HttpRequestMessage requestMessage, string? digest)
+        {
+            if (!string.IsNullOrWhiteSpace(digest))
+            {
+                requestMessage.Headers.Add("digest", $"sha-256={digest}");
+            }
+            return requestMessage;
+        }
+
         public static HttpRequestMessage WithSlug(this HttpRequestMessage requestMessage, string slug) 
         {
             requestMessage.Headers.Add("slug", slug);
@@ -56,6 +68,18 @@ namespace Fedora
         {
             requestMessage.Headers.Add("Link", $"<{RepositoryTypes.ArchivalGroup}>;rel=\"type\"");
             return requestMessage;
+        }
+
+        /// <summary>
+        /// This should really obtain the rel=describedBy link via a HEAD request
+        /// But in the interests of efficienct, we'll be a little less RESTful and
+        /// assume a Fedora convention.
+        /// </summary>
+        /// <param name="resourceUri"></param>
+        /// <returns></returns>
+        public static Uri MetadataUri(this Uri resourceUri)
+        {
+            return new Uri(resourceUri, "fcr:metadata");
         }
     }
 }

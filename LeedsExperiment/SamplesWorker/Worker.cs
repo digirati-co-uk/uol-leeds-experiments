@@ -42,20 +42,31 @@ namespace SamplesWorker
 
         private async Task OcflV1()
         {
-            var path = @"C:\Users\TomCrane\Dropbox\digirati\leeds\fedora-experiments\versioned-example\working\v1";
+            var localPath = @"C:\Users\TomCrane\Dropbox\digirati\leeds\fedora-experiments\versioned-example\working\v1";
 
             // begin transaction
             var transaction = await fedora.BeginTransaction();
-
-            // make an archival group named Now()
+            var storageContainer = await fedora.GetObject<Container>("storage-01", transaction);
+            
+            await fedora.CreateArchivalGroup(storageContainer.Location, $"ocfl-expt-{Now()}", "ocflv1", transaction);
 
             // POST the binary empty.text
+            var localEmptyTxt = new FileInfo(Path.Combine(localPath, "empty.txt"));
+            var fedoraEmptyTxt = await fedora.AddBinary(storageContainer.Location, localEmptyTxt, localEmptyTxt.Name, transaction);
+
             // POST the binary image.tiff
+            var localImageTiff = new FileInfo(Path.Combine(localPath, "image.tiff"));
+            var fedoraImageTiff = await fedora.AddBinary(storageContainer.Location, localImageTiff, localImageTiff.Name, transaction);
+
             // POST the basic container foo
+            var fooDir = new DirectoryInfo(Path.Combine(localPath, "foo"));
+            var fooContainer = await fedora.CreateContainer(storageContainer.Location, fooDir.Name, fooDir.Name, transaction);
+
             // POST into foo the binary bar.xml
+            var localBarXml = new FileInfo(Path.Combine(localPath, "foo", "bar.xml"));
+            var fedoraBarXml = await fedora.AddBinary(fooContainer.Location, localBarXml, localBarXml.Name, transaction);
 
-            // end transaction
-
+            await fedora.CommitTransaction(transaction);
         }
 
         private async Task OcflV2()

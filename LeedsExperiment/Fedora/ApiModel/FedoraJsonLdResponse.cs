@@ -10,7 +10,7 @@ public class FedoraJsonLdResponse
 
     [JsonPropertyName("@id")]
     [JsonPropertyOrder(1)]
-    public string Id { get; set; }
+    public required Uri Id { get; set; }
 
     [JsonPropertyName("@type")]
     [JsonPropertyOrder(2)]

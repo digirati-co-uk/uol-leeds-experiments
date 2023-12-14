@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Fedora
 {
-    public class ArchivalGroup : Directory
+    public class ArchivalGroup : Container
     {
         public ArchivalGroup(FedoraJsonLdResponse fedoraResponse) : base(fedoraResponse)
         {

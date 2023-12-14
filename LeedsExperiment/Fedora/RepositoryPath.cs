@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Fedora
 {
-    public class Path
+    public class RepositoryPath
     {
         // id="foo/bar"; id_digest=$(echo -n "info:fedora/${id}" | sha256sum -); echo "${id_digest:0:3}/${id_digest:3:3}/${id_digest:6:3}/${id_digest}"
 
