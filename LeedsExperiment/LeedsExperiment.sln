@@ -16,7 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "notes", "notes", "{FFBB9C8F
 		api-proxy.md = api-proxy.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamplesWorker", "SamplesWorker\SamplesWorker.csproj", "{3FAAC878-61C8-43F1-8963-D99B4548E326}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SamplesWorker", "SamplesWorker\SamplesWorker.csproj", "{3FAAC878-61C8-43F1-8963-D99B4548E326}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FedoraTests", "FedoraTests\FedoraTests.csproj", "{DB5452C1-837D-46AE-A5FC-B939818A83CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,10 @@ Global
 		{3FAAC878-61C8-43F1-8963-D99B4548E326}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FAAC878-61C8-43F1-8963-D99B4548E326}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FAAC878-61C8-43F1-8963-D99B4548E326}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

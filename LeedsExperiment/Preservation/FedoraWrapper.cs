@@ -151,10 +151,11 @@ public class FedoraWrapper : IFedora
         return binary;
     }
 
-
     public async Task<Transaction> BeginTransaction()
     {
         var req = MakeHttpRequestMessage("fcr:tx", HttpMethod.Post);
+        // var uri = _httpClient.BaseAddress.ToString() + "fcr:tx";
+        // var req = MakeHttpRequestMessage(new Uri(uri), HttpMethod.Post);
         var response = await _httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
         var tx = new Transaction
@@ -163,7 +164,12 @@ public class FedoraWrapper : IFedora
         };
         if (response.Headers.TryGetValues("Atomic-Expires", out IEnumerable<string>? values))
         {
+            // This header is not being returned in 
             tx.Expires = DateTime.Parse(values.First());
+        } 
+        else
+        {
+            await KeepTransactionAlive(tx);
         }
         return tx;
     }
@@ -250,7 +256,8 @@ public class FedoraWrapper : IFedora
 
     private HttpRequestMessage MakeHttpRequestMessage(string path, HttpMethod method)
     {
-        var uri = new Uri(path, UriKind.Relative);
+        var escaped = WebUtility.UrlEncode(path);
+        var uri = new Uri(escaped, UriKind.Relative);
         return MakeHttpRequestMessage(uri, method);
     }
 

@@ -21,7 +21,7 @@ namespace SamplesWorker
 
         private async Task EntryPoint(string[] args, CancellationToken stoppingToken)
         {
-            switch (args?[0]?.ToLowerInvariant())
+            switch (args?[1]?.ToLowerInvariant())
             {
                 case "ocfl":
                     await OcflV1();
