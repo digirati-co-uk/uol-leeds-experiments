@@ -1,17 +1,29 @@
 ﻿using Fedora.ApiModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Fedora
+namespace Fedora;
+
+public class ArchivalGroup : Container
 {
-    public class ArchivalGroup : Container
+    public ArchivalGroup(FedoraJsonLdResponse fedoraResponse) : base(fedoraResponse)
     {
-        public ArchivalGroup(FedoraJsonLdResponse fedoraResponse) : base(fedoraResponse)
-        {
 
+    }
+
+    public Uri GetResourceUri(string path)
+    {
+        // the Location property won't end with a trailing slash, so we can't create URIs with the normal Uri constructor
+        // we can't do:
+        // new Uri(Location, "foo/bar.xml");
+        // and nor can we use "./foo/bar.xml" or "/foo/bar.xml" 
+        if(Location == null)
+        {
+            throw new InvalidOperationException("Needs a location");
         }
+        if(Location.AbsolutePath.EndsWith("/"))
+        {
+            // I'm pretty sure this will never be the case
+            return new Uri(Location, path);
+        }
+        return new Uri($"{Location}/{path}");
     }
 }

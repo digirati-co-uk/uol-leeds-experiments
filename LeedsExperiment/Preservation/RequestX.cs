@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Headers;
+using System.Net.Mime;
 using Fedora.ApiModel;
 using Fedora.Vocab;
 
@@ -40,20 +41,29 @@ namespace Preservation
             return requestMessage;
         }
 
-        public static HttpRequestMessage WithContentDisposition(this HttpRequestMessage requestMessage, string? contentDisposition)
+        public static HttpContent WithContentDisposition(this HttpContent httpContent, string? contentDisposition)
         {
             if (!string.IsNullOrWhiteSpace(contentDisposition))
             {
-                requestMessage.Headers.Add("Content-Disposition", $"attachment; filename=\"{contentDisposition}\""); 
+                httpContent.Headers.Add("Content-Disposition", $"attachment; filename=\"{contentDisposition}\""); 
             }
-            return requestMessage;
+            return httpContent;
         }
 
-        public static HttpRequestMessage WithDigest(this HttpRequestMessage requestMessage, string? digest)
+        public static HttpContent WithContentType(this HttpContent httpContent, string? contentType)
+        {
+            if (!string.IsNullOrWhiteSpace(contentType))
+            {
+                httpContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+            }
+            return httpContent;
+        }
+
+        public static HttpRequestMessage WithDigest(this HttpRequestMessage requestMessage, string? digest, string algorithm)
         {
             if (!string.IsNullOrWhiteSpace(digest))
             {
-                requestMessage.Headers.Add("digest", $"sha-256={digest}");
+                requestMessage.Headers.Add("digest", $"{algorithm}={digest}");
             }
             return requestMessage;
         }
@@ -79,7 +89,10 @@ namespace Preservation
         /// <returns></returns>
         public static Uri MetadataUri(this Uri resourceUri)
         {
-            return new Uri(resourceUri, "fcr:metadata");
+            // I think it's actually impossible to construct the Uri in .NET without dropping back to strings
+            // because resourceUri does not have a trailing slash, and the relative Uri would have to be "./fcr:metadata"
+            // if you construct that Uri it ends up as https://domain.com/fcr:metadata - the path is stripped.
+            return new Uri($"{resourceUri}/fcr:metadata");
         }
     }
 }

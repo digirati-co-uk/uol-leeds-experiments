@@ -23,7 +23,8 @@ namespace Fedora
         /// <param name="transaction">A transaction if running</param>
         /// <param name="checksum">An initial checksum, e.g., calculated in browser on upload. This method will still calculate a checksum and compare with what it gets back from Fedora.</param>
         /// <returns></returns>
-        Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, Transaction? transaction = null, string? checksum = null);
+        Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
+        Task<Binary> PutBinary(Uri location, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
 
         // Transactions
         Task<Transaction> BeginTransaction();
@@ -31,5 +32,8 @@ namespace Fedora
         Task KeepTransactionAlive(Transaction tx);
         Task CommitTransaction(Transaction tx);
         Task RollbackTransaction(Transaction tx);
+
+        string? GetOrigin(ArchivalGroup versionedParent, Resource? childResource = null);
+        Task Delete(Uri uri, Transaction? transaction = null);
     }
 }

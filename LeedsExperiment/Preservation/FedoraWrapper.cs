@@ -80,6 +80,7 @@ public class FedoraWrapper : IFedora
 
         // The body is the new resource URL
         var newReq = MakeHttpRequestMessage(response.Headers.Location!, HttpMethod.Get)
+            .InTransaction(transaction)
             .ForJsonLd();
         var newResponse = await _httpClient.SendAsync(newReq);
 
@@ -110,30 +111,51 @@ public class FedoraWrapper : IFedora
     }
 
 
-    public async Task<Binary> AddBinary(Uri parent, FileInfo localFile, string originalName, Transaction? transaction = null, string? checksum = null)
+    public async Task<Binary> AddBinary(Uri parent, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
     {
+        return await PutOrPostBinary(HttpMethod.Post, parent, localFile, originalName, contentType, transaction, checksum);
+    }
+
+    public async Task<Binary> PutBinary(Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
+    {
+        return await PutOrPostBinary(HttpMethod.Put, location, localFile, originalName, contentType, transaction, checksum);
+    }
+
+    private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
+    {        
         // verify that parent is a container first?
-        var expected = Checksum.Sha256FromFile(localFile);
-        if(checksum != null && checksum != expected)
+        var expected = Checksum.Sha512FromFile(localFile);
+        if (checksum != null && checksum != expected)
         {
             throw new InvalidOperationException("Initial checksum doesn't match");
         }
-        var req = MakeHttpRequestMessage(parent, HttpMethod.Post)
+        var req = MakeHttpRequestMessage(location, httpMethod)
             .InTransaction(transaction)
-            .WithName(originalName)                     // need to decide where all these name properties live
-            .WithSlug(localFile.Name) // won't work...
-            .WithContentDisposition(originalName); // HTTP Headers - what char set is allowed? Will that work?
-      
+            .WithDigest(expected, "sha-512"); // move algorithm to config
+        if(httpMethod == HttpMethod.Post)
+        {
+            req.WithSlug(localFile.Name);
+        }
+
         // Need something better than this for large files.
         // How would we transfer a 10GB file for example?
-        req.Content = new ByteArrayContent(File.ReadAllBytes(localFile.FullName));
+        req.Content = new ByteArrayContent(File.ReadAllBytes(localFile.FullName))
+            .WithContentType(contentType);
+
+        // see if this survives the PUT (i.e., do we need to re-state it?)
+        if (httpMethod == HttpMethod.Post)
+        {
+            req.Content.WithContentDisposition(originalName);
+        }
 
         var response = await _httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
 
-        var newReq = MakeHttpRequestMessage(response.Headers.Location!.MetadataUri(), HttpMethod.Get)
-            .ForJsonLd(); // or the fcr?
-        var newResponse = await _httpClient.SendAsync(newReq); 
+        var resourceLocation = httpMethod == HttpMethod.Post ? response.Headers.Location! : location;
+        var newReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Get)
+            .InTransaction(transaction)
+            .ForJsonLd();
+        var newResponse = await _httpClient.SendAsync(newReq);
 
         var binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(newResponse);
         var binary = new Binary(binaryResponse)
@@ -141,10 +163,10 @@ public class FedoraWrapper : IFedora
             Location = binaryResponse.Id,
             FileName = binaryResponse.FileName,
             Size = binaryResponse.Size,
-            Digest = binaryResponse.Digest,
+            Digest = binaryResponse.Digest?.Split(':')[^1],
             ContentType = binaryResponse.ContentType
         };
-        if (binaryResponse.Digest != expected)
+        if (binary.Digest != expected)
         {
             throw new InvalidOperationException("Fedora checksum doesn't match");
         }
@@ -153,9 +175,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<Transaction> BeginTransaction()
     {
-        var req = MakeHttpRequestMessage("fcr:tx", HttpMethod.Post);
-        // var uri = _httpClient.BaseAddress.ToString() + "fcr:tx";
-        // var req = MakeHttpRequestMessage(new Uri(uri), HttpMethod.Post);
+        var req = MakeHttpRequestMessage("./fcr:tx", HttpMethod.Post); // note URI construction because of the colon
         var response = await _httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
         var tx = new Transaction
@@ -164,11 +184,12 @@ public class FedoraWrapper : IFedora
         };
         if (response.Headers.TryGetValues("Atomic-Expires", out IEnumerable<string>? values))
         {
-            // This header is not being returned in 
+            // This header is not being returned in the version we're using
             tx.Expires = DateTime.Parse(values.First());
         } 
         else
         {
+            // ... so we'll need to obtain it like this, I think
             await KeepTransactionAlive(tx);
         }
         return tx;
@@ -256,8 +277,7 @@ public class FedoraWrapper : IFedora
 
     private HttpRequestMessage MakeHttpRequestMessage(string path, HttpMethod method)
     {
-        var escaped = WebUtility.UrlEncode(path);
-        var uri = new Uri(escaped, UriKind.Relative);
+        var uri = new Uri(path, UriKind.Relative);
         return MakeHttpRequestMessage(uri, method);
     }
 
@@ -335,4 +355,29 @@ public class FedoraWrapper : IFedora
         }
         return null;
     }
+
+    public string? GetOrigin(ArchivalGroup versionedParent, Resource? childResource = null)
+    {
+        string basePath = _httpClient.BaseAddress.AbsolutePath;
+        string absPath = versionedParent.Location?.AbsolutePath ?? string.Empty;
+        if (!absPath.StartsWith(basePath))
+        {
+            return null;
+        }        
+        var idPart = absPath.Remove(0, basePath.Length);
+        string parentOrigin = RepositoryPath.RelativeToRoot(idPart);
+
+        return parentOrigin;
+
+    }
+
+    public async Task Delete(Uri uri, Transaction? transaction = null)
+    {
+        HttpRequestMessage req = MakeHttpRequestMessage(uri, HttpMethod.Delete)
+            .InTransaction(transaction);
+
+        var response = await _httpClient.SendAsync(req);
+        response.EnsureSuccessStatusCode();
+    }
+
 }
