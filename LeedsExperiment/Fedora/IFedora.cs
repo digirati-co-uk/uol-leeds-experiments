@@ -15,7 +15,8 @@ namespace Fedora
         Task<Container?> CreateContainer(string parentPath, string slug, string name, Transaction? transaction = null);
 
         /// <summary>
-        /// 
+        /// DISALLOW a POST for binaries, for now
+        /// Always require a PUT, so we can detect tombstone issues and not allow Fedora to give alternative slugs
         /// </summary>
         /// <param name="location">Uri of parent container resource</param>
         /// <param name="localFileInfo">(for now) a FileInfo - will we have an S3 impl, a filesystem impl, etc? We'll take the slug from this file (?)</param>
@@ -23,7 +24,7 @@ namespace Fedora
         /// <param name="transaction">A transaction if running</param>
         /// <param name="checksum">An initial checksum, e.g., calculated in browser on upload. This method will still calculate a checksum and compare with what it gets back from Fedora.</param>
         /// <returns></returns>
-        Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
+        // Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
         Task<Binary> PutBinary(Uri location, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
 
         // Transactions

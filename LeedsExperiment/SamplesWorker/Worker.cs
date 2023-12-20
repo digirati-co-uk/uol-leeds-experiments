@@ -26,7 +26,8 @@ namespace SamplesWorker
                 case "ocfl":
                     var ag = await OcflV1();
                     var ag2 = await OcflV2(ag);
-                    var ag3 = await OcflV3(ag2);
+                    // Can't run 3 until tombstone issue resolved
+                    // var ag3 = await OcflV3(ag2);
                     break;
                 default:
                     await DoDefault();
@@ -54,13 +55,15 @@ namespace SamplesWorker
             
             var archivalGroup = await fedora.CreateArchivalGroup(storageContainer.Location, $"ocfl-expt-{Now()}", "ocflv1", transaction);
 
-            // POST the binary image.tiff
+            // PUT the binary image.tiff
             var localImageTiff = new FileInfo(Path.Combine(localPath, "image.tiff"));
-            var fedoraImageTiff = await fedora.AddBinary(archivalGroup.Location, localImageTiff, localImageTiff.Name, "image/tiff", transaction);
+            var tiffLocation = archivalGroup.GetResourceUri("image.tiff");
+            var fedoraImageTiff = await fedora.PutBinary(tiffLocation, localImageTiff, localImageTiff.Name, "image/tiff", transaction);
 
             // POST the binary empty.text
             var localEmptyTxt = new FileInfo(Path.Combine(localPath, "empty.txt"));
-            var fedoraEmptyTxt = await fedora.AddBinary(archivalGroup.Location, localEmptyTxt, localEmptyTxt.Name, "text/plain", transaction);
+            var txtLocation = archivalGroup.GetResourceUri("empty.txt");
+            var fedoraEmptyTxt = await fedora.PutBinary(txtLocation, localEmptyTxt, localEmptyTxt.Name, "text/plain", transaction);
 
 
             // POST the basic container foo
@@ -69,7 +72,8 @@ namespace SamplesWorker
 
             // POST into foo the binary bar.xml
             var localBarXml = new FileInfo(Path.Combine(localPath, "foo", "bar.xml"));
-            var fedoraBarXml = await fedora.AddBinary(fooContainer.Location, localBarXml, localBarXml.Name, "text/xml", transaction);
+            var xmlLocation = archivalGroup.GetResourceUri("foo/bar.xml");
+            var fedoraBarXml = await fedora.PutBinary(xmlLocation, localBarXml, localBarXml.Name, "text/xml", transaction);
 
             await fedora.CommitTransaction(transaction);
 
@@ -91,7 +95,8 @@ namespace SamplesWorker
 
             // add empty2.txt
             var localEmpty2Txt = new FileInfo(Path.Combine(localPath, "empty2.txt"));
-            var fedoraEmpty2Txt = await fedora.AddBinary(archivalGroup.Location, localEmpty2Txt, localEmpty2Txt.Name, "text/plain", transaction);
+            var txtLocation = archivalGroup.GetResourceUri("empty2.txt");
+            var fedoraEmpty2Txt = await fedora.PutBinary(txtLocation, localEmpty2Txt, localEmpty2Txt.Name, "text/plain", transaction);
 
             // remove image.tiff
             await fedora.Delete(archivalGroup.GetResourceUri("image.tiff"), transaction);
@@ -116,7 +121,8 @@ namespace SamplesWorker
             // restore image.tiff
             // so should this be a POST or a PUT?
             var localImageTiff = new FileInfo(Path.Combine(localPath, "image.tiff"));
-            var fedoraImageTiff = await fedora.AddBinary(archivalGroup.Location, localImageTiff, localImageTiff.Name, "image/tiff", transaction);
+            var tiffUri = archivalGroup.GetResourceUri("image.tiff");
+            var fedoraImageTiff = await fedora.PutBinary(tiffUri, localImageTiff, localImageTiff.Name, "image/tiff", transaction);
 
             // end transaction
             await fedora.CommitTransaction(transaction);
