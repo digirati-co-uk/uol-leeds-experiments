@@ -1,4 +1,5 @@
 ﻿using Fedora.ApiModel;
+using Fedora.Storage;
 
 namespace Fedora;
 
@@ -8,6 +9,10 @@ public class ArchivalGroup : Container
     {
 
     }
+
+    public StorageMap? StorageMap { get; set; }
+
+    public Storage.Version[] Versions { get; set; }
 
     public Uri GetResourceUri(string path)
     {

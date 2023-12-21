@@ -12,9 +12,10 @@ namespace Fedora.ApiModel
         [JsonPropertyOrder(202)]
         public string? ContentType { get; set; }
 
+        // This comes back as a string
         [JsonPropertyName("hasSize")]
         [JsonPropertyOrder(203)]
-        public long Size { get; set; }
+        public string Size { get; set; }
 
         [JsonPropertyName("hasMessageDigest")]
         [JsonPropertyOrder(211)]

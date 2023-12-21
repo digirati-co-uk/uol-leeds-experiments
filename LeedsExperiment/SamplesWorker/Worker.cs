@@ -28,7 +28,14 @@ namespace SamplesWorker
                     var ag2 = await OcflV2(ag);
                     // Can't run 3 until tombstone issue resolved
                     // var ag3 = await OcflV3(ag2);
+                    var altAg3 = await OcflV3Alt(ag2);
+                    var altAg4 = await OcflV4Alt(altAg3);
                     break;
+
+                case "ag":
+                    await GetAg("storage-01/ocfl-expt-12-21-23-9-58-38");
+                    break;
+
                 default:
                     await DoDefault();
                     break;
@@ -36,6 +43,10 @@ namespace SamplesWorker
             }
         }
 
+        private async Task GetAg(string path)
+        {
+            var ag = await fedora.GetPopulatedArchivalGroup(path);
+        }
 
         private async Task DoDefault()
         {
@@ -131,6 +142,48 @@ namespace SamplesWorker
             Console.WriteLine("archivalGroup v3 at {0}", fedora.GetOrigin(reObtainedAG));
             return reObtainedAG;
         }
+
+
+        private async Task<ArchivalGroup> OcflV3Alt(ArchivalGroup archivalGroup)
+        {
+            var localPath = @"C:\Users\TomCrane\Dropbox\digirati\leeds\fedora-experiments\versioned-example\working\v3Alt";
+
+            var transaction = await fedora.BeginTransaction();
+            Console.WriteLine("In transaction for v3Alt {0}", transaction.Location);
+
+            // Add another image
+            var localJpg = new FileInfo(Path.Combine(localPath, "picture.jpg"));
+            var putLocation = archivalGroup.GetResourceUri("picture.jpg");
+            var fedoraJpg = await fedora.PutBinary(putLocation, localJpg, localJpg.Name, "image/jpeg", transaction);
+
+            // end transaction
+            await fedora.CommitTransaction(transaction);
+
+            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v3Alt at {0}", fedora.GetOrigin(reObtainedAG));
+            return reObtainedAG;
+        }
+
+        private async Task<ArchivalGroup> OcflV4Alt(ArchivalGroup archivalGroup)
+        {
+            var localPath = @"C:\Users\TomCrane\Dropbox\digirati\leeds\fedora-experiments\versioned-example\working\v4Alt";
+
+            var transaction = await fedora.BeginTransaction();
+            Console.WriteLine("In transaction for v4Alt {0}", transaction.Location);
+
+            // CHANGE the image at the picture.jpg URI
+            var localJpg = new FileInfo(Path.Combine(localPath, "picture.jpg"));
+            var putLocation = archivalGroup.GetResourceUri("picture.jpg");
+            var fedoraJpg = await fedora.PutBinary(putLocation, localJpg, localJpg.Name, "image/jpeg", transaction);
+
+            // end transaction
+            await fedora.CommitTransaction(transaction);
+
+            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v4Alt at {0}", fedora.GetOrigin(reObtainedAG));
+            return reObtainedAG;
+        }
+
 
         /*
          * Demonstrate that we can 

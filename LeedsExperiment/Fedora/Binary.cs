@@ -20,5 +20,10 @@ namespace Fedora
         public string? ContentType { get; set; }
         public long Size { get; set; }
         public string? Digest { get; set; }
+
+        public override string ToString()
+        {
+            return $"🗎 {Name ?? GetType().Name}";
+        }
     }
 }

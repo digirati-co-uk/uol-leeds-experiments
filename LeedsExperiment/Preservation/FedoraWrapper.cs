@@ -1,19 +1,23 @@
 ﻿using Fedora;
 using Fedora.ApiModel;
 using Fedora.Vocab;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Preservation;
 
 public class FedoraWrapper : IFedora
 {
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient httpClient;
+    private readonly IStorageMapper storageMapper;
 
-    public FedoraWrapper(HttpClient httpClient)
+    public FedoraWrapper(HttpClient httpClient, IStorageMapper storageMapper)
     {
-        _httpClient = httpClient;
+        this.httpClient = httpClient;
+        this.storageMapper = storageMapper;
     }
 
     public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false)
@@ -38,7 +42,7 @@ public class FedoraWrapper : IFedora
             req.WithContainedDescriptions();
         }
         req.RequestUri = new Uri(path, UriKind.Relative);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         var raw = await response.Content.ReadAsStringAsync();
         return raw;
     }
@@ -51,7 +55,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name, Transaction? transaction = null)
     {
-        var parent = new Uri(_httpClient.BaseAddress!, parentPath);
+        var parent = new Uri(httpClient.BaseAddress!, parentPath);
         return await CreateContainerInternal(true, parent, slug, name, transaction) as ArchivalGroup;
     }
     public async Task<Container?> CreateContainer(Uri parent, string slug, string name, Transaction? transaction = null)
@@ -61,7 +65,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<Container?> CreateContainer(string parentPath, string slug, string name, Transaction? transaction = null)
     {
-        var parent = new Uri(_httpClient.BaseAddress!, parentPath);
+        var parent = new Uri(httpClient.BaseAddress!, parentPath);
         return await CreateContainerInternal(false, parent, slug, name, transaction);
     }
 
@@ -75,14 +79,14 @@ public class FedoraWrapper : IFedora
         {
             req.AsArchivalGroup();
         }
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
 
         // The body is the new resource URL
         var newReq = MakeHttpRequestMessage(response.Headers.Location!, HttpMethod.Get)
             .InTransaction(transaction)
             .ForJsonLd();
-        var newResponse = await _httpClient.SendAsync(newReq);
+        var newResponse = await httpClient.SendAsync(newReq);
 
         var containerResponse = await MakeFedoraResponse<FedoraJsonLdResponse>(newResponse);
         if (containerResponse != null)
@@ -130,7 +134,7 @@ public class FedoraWrapper : IFedora
             throw new InvalidOperationException("Initial checksum doesn't match");
         }
         var req = MakeBinaryPutOrPost(httpMethod, location, localFile, originalName, contentType, transaction, expected);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         if (httpMethod == HttpMethod.Put && response.StatusCode == HttpStatusCode.Gone)
         {
             // https://github.com/fcrepo/fcrepo/pull/2044
@@ -141,7 +145,7 @@ public class FedoraWrapper : IFedora
             // Log or record somehow that this has happened?
             var retryReq = MakeBinaryPutOrPost(httpMethod, location, localFile, originalName, contentType, transaction, expected)
                 .OverwriteTombstone();
-            response = await _httpClient.SendAsync(retryReq);
+            response = await httpClient.SendAsync(retryReq);
         }
         response.EnsureSuccessStatusCode();
 
@@ -149,7 +153,7 @@ public class FedoraWrapper : IFedora
         var newReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Get)
             .InTransaction(transaction)
             .ForJsonLd();
-        var newResponse = await _httpClient.SendAsync(newReq);
+        var newResponse = await httpClient.SendAsync(newReq);
 
         var binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(newResponse);
         if (binaryResponse.Title == null)
@@ -158,20 +162,20 @@ public class FedoraWrapper : IFedora
             var patchReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Patch)
                 .InTransaction(transaction);
             patchReq.AsInsertTitlePatch(originalName);
-            var patchResponse = await _httpClient.SendAsync(patchReq);
+            var patchResponse = await httpClient.SendAsync(patchReq);
             patchResponse.EnsureSuccessStatusCode();
             // now ask again:
             var retryMetadataReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Get)
                .InTransaction(transaction)
                .ForJsonLd();
-            var afterPatchResponse = await _httpClient.SendAsync(retryMetadataReq);
+            var afterPatchResponse = await httpClient.SendAsync(retryMetadataReq);
             binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(afterPatchResponse);
         }
         var binary = new Binary(binaryResponse)
         {
             Location = binaryResponse.Id,
             FileName = binaryResponse.FileName,
-            Size = binaryResponse.Size,
+            Size = Convert.ToInt64(binaryResponse.Size),
             Digest = binaryResponse.Digest?.Split(':')[^1],
             ContentType = binaryResponse.ContentType
         };
@@ -209,7 +213,7 @@ public class FedoraWrapper : IFedora
     public async Task<Transaction> BeginTransaction()
     {
         var req = MakeHttpRequestMessage("./fcr:tx", HttpMethod.Post); // note URI construction because of the colon
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
         var tx = new Transaction
         {
@@ -231,7 +235,7 @@ public class FedoraWrapper : IFedora
     public async Task CheckTransaction(Transaction tx)
     {
         HttpRequestMessage req = MakeHttpRequestMessage(tx.Location, HttpMethod.Get);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         switch (response.StatusCode)
         {
             case HttpStatusCode.NoContent:
@@ -252,7 +256,7 @@ public class FedoraWrapper : IFedora
     public async Task KeepTransactionAlive(Transaction tx)
     {
         HttpRequestMessage req = MakeHttpRequestMessage(tx.Location, HttpMethod.Post);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
 
         if (response.Headers.TryGetValues("Atomic-Expires", out IEnumerable<string>? values))
@@ -264,7 +268,7 @@ public class FedoraWrapper : IFedora
     public async Task CommitTransaction(Transaction tx)
     {
         HttpRequestMessage req = MakeHttpRequestMessage(tx.Location, HttpMethod.Put);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         switch (response.StatusCode)
         {
             case HttpStatusCode.NoContent:
@@ -289,7 +293,7 @@ public class FedoraWrapper : IFedora
     public async Task RollbackTransaction(Transaction tx)
     {
         HttpRequestMessage req = MakeHttpRequestMessage(tx.Location, HttpMethod.Delete);
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         switch (response.StatusCode)
         {
             case HttpStatusCode.NoContent:
@@ -323,6 +327,7 @@ public class FedoraWrapper : IFedora
 
     private static async Task<T?> MakeFedoraResponse<T>(HttpResponseMessage response) where T : FedoraJsonLdResponse
     {
+        // works for SINGLE resources, not contained responses that send back a @graph
         var fedoraResponse = await response.Content.ReadFromJsonAsync<T>();
         if (fedoraResponse != null)
         {
@@ -334,7 +339,7 @@ public class FedoraWrapper : IFedora
     }
     public async Task<T?> GetObject<T>(string path, Transaction? transaction = null) where T : Resource
     {
-        var uri = new Uri(_httpClient.BaseAddress!, path);
+        var uri = new Uri(httpClient.BaseAddress!, path);
         return await GetObject<T>(uri, transaction);
     }
 
@@ -344,7 +349,7 @@ public class FedoraWrapper : IFedora
         var reqUri = isBinary ? uri.MetadataUri() : uri;
         var request = MakeHttpRequestMessage(reqUri, HttpMethod.Get)
             .ForJsonLd(); 
-        var response = await _httpClient.SendAsync(request);
+        var response = await httpClient.SendAsync(request);
 
         if (isBinary)
         {
@@ -353,7 +358,7 @@ public class FedoraWrapper : IFedora
             {
                 Location = fileResponse.Id,
                 FileName = fileResponse.FileName,
-                Size = fileResponse.Size,
+                Size = Convert.ToInt64(fileResponse.Size),
                 Digest = fileResponse.Digest,
                 ContentType = fileResponse.ContentType
             };
@@ -389,9 +394,139 @@ public class FedoraWrapper : IFedora
         return null;
     }
 
+    public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(string path, string? version = null, Transaction? transaction = null)
+    {
+        var uri = new Uri(httpClient.BaseAddress!, path);
+        return await GetPopulatedArchivalGroup(uri, version, transaction);
+    }
+
+
+    public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(Uri uri, string? version = null, Transaction? transaction = null)
+    {
+        if(version != null)
+        {
+            throw new NotImplementedException("Can't ask for fedora version yet");
+            // we'll need to carry version all the way through this, GetPopulatedContainer will need to take version
+        }
+        var archivalGroup = await GetPopulatedContainer(uri, true, transaction) as ArchivalGroup;
+        if(archivalGroup == null)
+        {
+            return null;
+        }
+
+        // Even if you don't ask for a specific version, we still list all the available versions.
+        // archivalGroup.Versions = /// what interface supplies this? - get it from Fedora first then pass to storage mapper to fill in the ocfl stuff?
+
+        // Our version class mixes Memento and OCFL versions, we need to correlate them
+
+        archivalGroup.StorageMap = await storageMapper.GetStorageMap(archivalGroup);
+        return archivalGroup;
+    }
+
+    public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null)
+    {
+        var request = MakeHttpRequestMessage(uri, HttpMethod.Get)
+            .ForJsonLd()
+            .WithContainedDescriptions();
+
+        // WithContainedDescriptions could return @graph or it could return a single object if the container has no children
+
+        // what's most efficient way?
+        var response = await httpClient.SendAsync(request);
+        if(isArchivalGroup && !response.HasArchivalGroupHeader())
+        {
+            throw new InvalidOperationException("Response is not an Archival Group");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        using(JsonDocument jDoc = JsonDocument.Parse(content))
+        {
+            JsonElement[]? containerAndContained = null;
+            if (jDoc.RootElement.TryGetProperty("@graph", out JsonElement graph))
+            {
+                containerAndContained = [.. graph.EnumerateArray()];
+            }
+            else
+            {
+                if (jDoc.RootElement.TryGetProperty("@id", out JsonElement idElement))
+                {
+                    containerAndContained = [jDoc.RootElement];
+                }
+            }
+
+            if (containerAndContained == null || containerAndContained.Length == 0) 
+            {
+                throw new InvalidOperationException("Could not parse Archival Group");
+            }
+            if (containerAndContained[0].GetProperty("@id").GetString() != uri.ToString())
+            {
+                throw new InvalidOperationException("First resource in graph should be the asked-for URI");
+            }
+
+            // Make a map of the IDs
+            Dictionary<string, JsonElement> dict = containerAndContained.ToDictionary(x => x.GetProperty("@id").GetString()!);
+            var fedoraObject = JsonSerializer.Deserialize<FedoraJsonLdResponse>(containerAndContained[0]);
+            Container topContainer;
+            if(isArchivalGroup)
+            {
+                topContainer = new ArchivalGroup(fedoraObject)
+                {
+                    Location = fedoraObject.Id,
+                    Binaries = [],
+                    Containers = []
+                };
+            } 
+            else
+            {
+                topContainer = new Container(fedoraObject)
+                {
+                    Location = fedoraObject.Id,
+                    Binaries = [],
+                    Containers = []
+                };
+
+            }
+            // Get the contains property which may be a single value or an array
+            List<string> childIds = [];
+            if (containerAndContained[0].TryGetProperty("contains", out JsonElement contains))
+            {
+                if(contains.ValueKind == JsonValueKind.String)
+                {
+                    childIds = [contains.GetString()!];
+                }
+                else if(contains.ValueKind == JsonValueKind.Array)
+                {
+                    childIds = contains.EnumerateArray().Select(x => x.GetString()!).ToList();
+                }
+                foreach (var id in childIds)
+                {
+                    var resource = dict[id];
+                    if (resource.HasType("fedora:Container"))
+                    {
+                        var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource);
+                        var container = await GetPopulatedContainer(fedoraContainer.Id, false, transaction);
+                        topContainer.Containers.Add(container);
+                    }
+                    else if(resource.HasType("fedora:Binary"))
+                    {
+                        var fedoraBinary = JsonSerializer.Deserialize<BinaryMetadataResponse>(resource);
+                        var binary = new Binary(fedoraBinary)
+                        {
+                            Location = fedoraBinary.Id,
+                        };
+                        topContainer.Binaries.Add(binary);
+                    }
+                }
+            }
+            return topContainer;
+        }
+    }
+
+
     public string? GetOrigin(ArchivalGroup versionedParent, Resource? childResource = null)
     {
-        string basePath = _httpClient.BaseAddress.AbsolutePath;
+        string basePath = httpClient.BaseAddress.AbsolutePath;
         string absPath = versionedParent.Location?.AbsolutePath ?? string.Empty;
         if (!absPath.StartsWith(basePath))
         {
@@ -409,7 +544,7 @@ public class FedoraWrapper : IFedora
         HttpRequestMessage req = MakeHttpRequestMessage(uri, HttpMethod.Delete)
             .InTransaction(transaction);
 
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
     }
 

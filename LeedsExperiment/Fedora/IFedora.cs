@@ -9,6 +9,9 @@ namespace Fedora
         Task<T?> GetObject<T>(Uri uri, Transaction? transaction = null) where T: Resource;
         Task<T?> GetObject<T>(string path, Transaction? transaction = null) where T : Resource;
 
+        Task<ArchivalGroup?> GetPopulatedArchivalGroup(Uri uri, string? version = null, Transaction? transaction = null);
+        Task<ArchivalGroup?> GetPopulatedArchivalGroup(string path, string? version = null, Transaction? transaction = null);
+
         Task<ArchivalGroup?> CreateArchivalGroup(Uri parent, string slug, string name, Transaction? transaction = null);
         Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name, Transaction? transaction = null);
         Task<Container?> CreateContainer(Uri parent, string slug, string name, Transaction? transaction = null);
