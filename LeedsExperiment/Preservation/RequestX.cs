@@ -116,5 +116,15 @@ namespace Preservation
             // if you construct that Uri it ends up as https://domain.com/fcr:metadata - the path is stripped.
             return new Uri($"{resourceUri}/fcr:metadata");
         }
+
+        /// <summary>
+        /// Same comments as above
+        /// </summary>
+        /// <param name="resourceUri"></param>
+        /// <returns></returns>
+        public static Uri VersionsUri(this Uri resourceUri)
+        {
+            return new Uri($"{resourceUri}/fcr:versions");
+        }
     }
 }

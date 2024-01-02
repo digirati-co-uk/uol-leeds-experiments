@@ -1,11 +1,14 @@
 ﻿using Fedora;
 using Fedora.ApiModel;
+using Fedora.Storage;
 using Fedora.Vocab;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Preservation;
 
@@ -414,13 +417,69 @@ public class FedoraWrapper : IFedora
             return null;
         }
 
-        // Even if you don't ask for a specific version, we still list all the available versions.
-        // archivalGroup.Versions = /// what interface supplies this? - get it from Fedora first then pass to storage mapper to fill in the ocfl stuff?
+        // Partially populate
+        archivalGroup.Versions = await GetFedoraVersions(uri);
+        archivalGroup.StorageMap = await storageMapper.GetStorageMap(archivalGroup.Location, version);
 
-        // Our version class mixes Memento and OCFL versions, we need to correlate them
-
-        archivalGroup.StorageMap = await storageMapper.GetStorageMap(archivalGroup);
+        MergeVersions(archivalGroup);
         return archivalGroup;
+    }
+
+    private void MergeVersions(ArchivalGroup archivalGroup)
+    {
+        // Add information from
+        // archivalGroup.StorageMap.AllVersions
+        // into
+        // archivalGroup.Versions
+
+        // ?? hmm
+
+        throw new NotImplementedException();
+    }
+
+    private async Task<Fedora.Storage.Version[]?> GetFedoraVersions(Uri uri)
+    {
+        var request = MakeHttpRequestMessage(uri.VersionsUri(), HttpMethod.Get)
+            .ForJsonLd();
+
+        var response = await httpClient.SendAsync(request);
+        var content = await response.Content.ReadAsStringAsync();
+
+        using (JsonDocument jDoc = JsonDocument.Parse(content))
+        {
+            List<string> childIds = GetIdsFromContainsProperty(jDoc.RootElement);
+            // We could go and request each of these.
+            // But... the Fedora API gives the created and lastmodified date of the original, not the version, when you ask for a versioned response.
+            // Is that a bug?
+            // We're not going to learn anything more than we would by parsing the memento path elements - which is TERRIBLY non-REST-y
+            return childIds
+                .Select(id => id.Split('/').Last())
+                .Select(p => new Fedora.Storage.Version { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
+                .ToArray();
+        }
+
+    }
+
+    private DateTime GetDateFromMemento(string mementoFormat)
+    {
+        return DateTime.ParseExact(mementoFormat, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None);
+    }
+
+    private List<string> GetIdsFromContainsProperty(JsonElement element)
+    {
+        List<string> childIds = [];
+        if (element.TryGetProperty("contains", out JsonElement contains))
+        {
+            if (contains.ValueKind == JsonValueKind.String)
+            {
+                childIds = [contains.GetString()!];
+            }
+            else if (contains.ValueKind == JsonValueKind.Array)
+            {
+                childIds = contains.EnumerateArray().Select(x => x.GetString()!).ToList();
+            }
+        }
+        return childIds;
     }
 
     public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null)
@@ -433,9 +492,14 @@ public class FedoraWrapper : IFedora
 
         // what's most efficient way?
         var response = await httpClient.SendAsync(request);
-        if(isArchivalGroup && !response.HasArchivalGroupHeader())
+        bool hasArchivalGroupHeader = response.HasArchivalGroupHeader();
+        if (isArchivalGroup && !hasArchivalGroupHeader)
         {
-            throw new InvalidOperationException("Response is not an Archival Group");
+            throw new InvalidOperationException("Response is not an Archival Group, when Archival Group expected");
+        }
+        if (!isArchivalGroup && hasArchivalGroupHeader)
+        {
+            throw new InvalidOperationException("Response is an Archival Group, when Basic Container expected");
         }
 
         var content = await response.Content.ReadAsStringAsync();
@@ -488,37 +552,27 @@ public class FedoraWrapper : IFedora
 
             }
             // Get the contains property which may be a single value or an array
-            List<string> childIds = [];
-            if (containerAndContained[0].TryGetProperty("contains", out JsonElement contains))
+            List<string> childIds = GetIdsFromContainsProperty(containerAndContained[0]);
+            foreach (var id in childIds)
             {
-                if(contains.ValueKind == JsonValueKind.String)
+                var resource = dict[id];
+                if (resource.HasType("fedora:Container"))
                 {
-                    childIds = [contains.GetString()!];
+                    var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource);
+                    var container = await GetPopulatedContainer(fedoraContainer.Id, false, transaction);
+                    topContainer.Containers.Add(container);
                 }
-                else if(contains.ValueKind == JsonValueKind.Array)
+                else if (resource.HasType("fedora:Binary"))
                 {
-                    childIds = contains.EnumerateArray().Select(x => x.GetString()!).ToList();
-                }
-                foreach (var id in childIds)
-                {
-                    var resource = dict[id];
-                    if (resource.HasType("fedora:Container"))
+                    var fedoraBinary = JsonSerializer.Deserialize<BinaryMetadataResponse>(resource);
+                    var binary = new Binary(fedoraBinary)
                     {
-                        var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource);
-                        var container = await GetPopulatedContainer(fedoraContainer.Id, false, transaction);
-                        topContainer.Containers.Add(container);
-                    }
-                    else if(resource.HasType("fedora:Binary"))
-                    {
-                        var fedoraBinary = JsonSerializer.Deserialize<BinaryMetadataResponse>(resource);
-                        var binary = new Binary(fedoraBinary)
-                        {
-                            Location = fedoraBinary.Id,
-                        };
-                        topContainer.Binaries.Add(binary);
-                    }
+                        Location = fedoraBinary.Id,
+                    };
+                    topContainer.Binaries.Add(binary);
                 }
             }
+
             return topContainer;
         }
     }

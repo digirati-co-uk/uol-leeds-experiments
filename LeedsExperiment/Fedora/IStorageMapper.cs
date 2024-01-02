@@ -4,5 +4,5 @@ namespace Fedora;
 
 public interface IStorageMapper
 {
-    Task<StorageMap> GetStorageMap(ArchivalGroup archivalGroup, string? version = null);
+    Task<StorageMap> GetStorageMap(Uri archivalGroupUri, string? version = null);
 }
