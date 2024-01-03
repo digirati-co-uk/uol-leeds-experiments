@@ -3,12 +3,10 @@ using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Preservation;
 
@@ -408,7 +406,7 @@ public class FedoraWrapper : IFedora
     {
         if(version != null)
         {
-            throw new NotImplementedException("Can't ask for fedora version yet");
+            // throw new NotImplementedException("Can't ask for fedora version yet");
             // we'll need to carry version all the way through this, GetPopulatedContainer will need to take version
         }
         var archivalGroup = await GetPopulatedContainer(uri, true, transaction) as ArchivalGroup;
@@ -417,27 +415,38 @@ public class FedoraWrapper : IFedora
             return null;
         }
 
+        archivalGroup.Origin = storageMapper.GetArchivalGroupOrigin(archivalGroup.Location);
+
         // Partially populate
         archivalGroup.Versions = await GetFedoraVersions(uri);
+
         archivalGroup.StorageMap = await storageMapper.GetStorageMap(archivalGroup.Location, version);
 
         MergeVersions(archivalGroup);
+
         return archivalGroup;
     }
 
     private void MergeVersions(ArchivalGroup archivalGroup)
     {
-        // Add information from
-        // archivalGroup.StorageMap.AllVersions
-        // into
-        // archivalGroup.Versions
-
-        // ?? hmm
-
-        
+        if(archivalGroup.Versions.Length != archivalGroup.StorageMap.AllVersions.Length)
+        {
+            throw new InvalidOperationException("Fedora reports a different number of versions from OCFL");
+        }
+        for(int i = 0; i < archivalGroup.Versions.Length; i++)
+        {
+            var fedoraVersion = archivalGroup.Versions[i];
+            var ocflVersion = archivalGroup.StorageMap.AllVersions[i];
+            if(fedoraVersion.MementoTimestamp != ocflVersion.MementoTimestamp)
+            {
+                throw new InvalidOperationException($"Fedora reports a different MementoTimestamp {fedoraVersion.MementoTimestamp} from OCFL: {ocflVersion.MementoTimestamp}");
+            }
+            fedoraVersion.OcflVersion = ocflVersion.OcflVersion;
+        }
+        archivalGroup.Version = archivalGroup.StorageMap.Version;
     }
 
-    private async Task<Fedora.Storage.ObjectVersion[]?> GetFedoraVersions(Uri uri)
+    private async Task<ObjectVersion[]?> GetFedoraVersions(Uri uri)
     {
         var request = MakeHttpRequestMessage(uri.VersionsUri(), HttpMethod.Get)
             .ForJsonLd();
@@ -454,7 +463,8 @@ public class FedoraWrapper : IFedora
             // We're not going to learn anything more than we would by parsing the memento path elements - which is TERRIBLY non-REST-y
             return childIds
                 .Select(id => id.Split('/').Last())
-                .Select(p => new Fedora.Storage.ObjectVersion { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
+                .Select(p => new ObjectVersion { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
+                .OrderBy(ov => ov.MementoTimestamp)
                 .ToArray();
         }
 
@@ -577,21 +587,6 @@ public class FedoraWrapper : IFedora
         }
     }
 
-
-    public string? GetOrigin(ArchivalGroup versionedParent, Resource? childResource = null)
-    {
-        string basePath = httpClient.BaseAddress.AbsolutePath;
-        string absPath = versionedParent.Location?.AbsolutePath ?? string.Empty;
-        if (!absPath.StartsWith(basePath))
-        {
-            return null;
-        }        
-        var idPart = absPath.Remove(0, basePath.Length);
-        string parentOrigin = RepositoryPath.RelativeToRoot(idPart);
-
-        return parentOrigin;
-
-    }
 
     public async Task Delete(Uri uri, Transaction? transaction = null)
     {

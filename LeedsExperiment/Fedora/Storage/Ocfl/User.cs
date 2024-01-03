@@ -6,10 +6,10 @@ public class User
 {
     [JsonPropertyName("name")]
     [JsonPropertyOrder(1)]
-    public DateTime Name { get; set; }
+    public string Name { get; set; }
 
 
     [JsonPropertyName("address")]
     [JsonPropertyOrder(2)]
-    public DateTime Address { get; set; }
+    public string Address { get; set; }
 }

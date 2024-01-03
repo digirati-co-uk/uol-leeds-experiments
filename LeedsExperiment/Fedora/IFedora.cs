@@ -37,7 +37,7 @@ namespace Fedora
         Task CommitTransaction(Transaction tx);
         Task RollbackTransaction(Transaction tx);
 
-        string? GetOrigin(ArchivalGroup versionedParent, Resource? childResource = null);
         Task Delete(Uri uri, Transaction? transaction = null);
+
     }
 }

@@ -1,4 +1,6 @@
+using Amazon.S3;
 using Fedora;
+using Preservation;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,14 +12,24 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHttpClient<IFedora, Preservation.FedoraWrapper>(client =>
+var fedoraAwsOptions = builder.Configuration.GetAWSOptions("Fedora-AWS");
+builder.Services.AddDefaultAWSOptions(fedoraAwsOptions);
+builder.Services.AddAWSService<IAmazonS3>();
+
+builder.Services.Configure<FedoraAwsOptions>(builder.Configuration.GetSection("Fedora-AWS-S3"));
+var apiConfig = builder.Configuration.GetSection("Fedora-API");
+builder.Services.Configure<FedoraApiOptions>(apiConfig);
+
+builder.Services.AddSingleton<IStorageMapper, OcflS3StorageMapper>();
+builder.Services.AddHttpClient<IFedora, FedoraWrapper>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["FedoraApiRoot"]!);
-    var authHeader = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(
-               $"{builder.Configuration["FedoraAdminUser"]}:{builder.Configuration["FedoraAdminPassword"]}"));
+    var apiOptions = apiConfig.Get<FedoraApiOptions>();
+    client.BaseAddress = new Uri(apiOptions!.ApiRoot);
+    var credentials = $"{apiOptions!.AdminUser}:{apiOptions.AdminPassword}";
+    var authHeader = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(credentials));
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
-    client.DefaultRequestHeaders.Add("Accept", "application/ld+json");
 });
+
 
 var app = builder.Build();
 

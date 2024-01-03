@@ -12,7 +12,9 @@ public class ArchivalGroup : Container
 
     public StorageMap? StorageMap { get; set; }
 
-    public Storage.ObjectVersion[]? Versions { get; set; }
+    public ObjectVersion[]? Versions { get; set; }
+
+    public ObjectVersion? Version { get; set; }
 
     public Uri GetResourceUri(string path)
     {
@@ -31,4 +33,6 @@ public class ArchivalGroup : Container
         }
         return new Uri($"{Location}/{path}");
     }
+
+    public string? Origin { get; set; }
 }

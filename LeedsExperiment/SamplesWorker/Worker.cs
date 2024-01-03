@@ -1,4 +1,5 @@
 using Fedora;
+using System.IO;
 
 namespace SamplesWorker
 {
@@ -33,7 +34,8 @@ namespace SamplesWorker
                     break;
 
                 case "ag":
-                    await GetAg("storage-01/ocfl-expt-12-21-23-9-58-38");
+                    var path = "storage-01/ocfl-expt-01-03-24-10-06-50";
+                    await PrintArchivalGroup(path);
                     break;
 
                 default:
@@ -43,9 +45,38 @@ namespace SamplesWorker
             }
         }
 
-        private async Task GetAg(string path)
+        private async Task PrintArchivalGroup(string path)
+        {
+            var headAg = await fedora.GetPopulatedArchivalGroup(path);
+            Console.WriteLine("This is the HEAD archival object for {0}", path);
+            printArchivalGroup(headAg);
+            foreach (var version in headAg.Versions)
+            {
+                Console.WriteLine();
+                Console.WriteLine("--------------------------------------------------------");
+                Console.WriteLine("This is version {0} for archival object {1}", version.OcflVersion, path);
+                var vAg = await fedora.GetPopulatedArchivalGroup(path, version.OcflVersion);
+                printArchivalGroup(vAg);
+            }
+            foreach (var version in headAg.Versions)
+            {
+                Console.WriteLine();
+                Console.WriteLine("--------------------------------------------------------");
+                Console.WriteLine("This is version {0} for archival object {1}", version.MementoTimestamp, path);
+                var vAg = await fedora.GetPopulatedArchivalGroup(path, version.MementoTimestamp);
+                printArchivalGroup(vAg);
+            }
+        }
+
+        private void printArchivalGroup(ArchivalGroup vAg)
+        {
+            Console.WriteLine(vAg.Version);
+        }
+
+        private async Task<ArchivalGroup> GetAg(string path)
         {
             var ag = await fedora.GetPopulatedArchivalGroup(path);
+            return ag;
         }
 
         private async Task DoDefault()
@@ -88,7 +119,8 @@ namespace SamplesWorker
 
             await fedora.CommitTransaction(transaction);
 
-            Console.WriteLine("archivalGroup at {0}", fedora.GetOrigin(archivalGroup));
+            var reObtainedAG = await fedora.GetPopulatedArchivalGroup(archivalGroup.Location);
+            Console.WriteLine("archivalGroup at {0}", reObtainedAG.Origin);
             return archivalGroup;
         }
 
@@ -114,8 +146,8 @@ namespace SamplesWorker
 
             await fedora.CommitTransaction(transaction);
 
-            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
-            Console.WriteLine("archivalGroup v2 at {0}", fedora.GetOrigin(reObtainedAG));
+            var reObtainedAG = await fedora.GetPopulatedArchivalGroup(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v2 at {0}", reObtainedAG.Origin);
             return reObtainedAG;
         }
 
@@ -138,8 +170,8 @@ namespace SamplesWorker
             // end transaction
             await fedora.CommitTransaction(transaction);
 
-            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
-            Console.WriteLine("archivalGroup v3 at {0}", fedora.GetOrigin(reObtainedAG));
+            var reObtainedAG = await fedora.GetPopulatedArchivalGroup(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v3 at {0}", reObtainedAG.Origin);
             return reObtainedAG;
         }
 
@@ -159,8 +191,8 @@ namespace SamplesWorker
             // end transaction
             await fedora.CommitTransaction(transaction);
 
-            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
-            Console.WriteLine("archivalGroup v3Alt at {0}", fedora.GetOrigin(reObtainedAG));
+            var reObtainedAG = await fedora.GetPopulatedArchivalGroup(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v3Alt at {0}", reObtainedAG.Origin);
             return reObtainedAG;
         }
 
@@ -179,8 +211,8 @@ namespace SamplesWorker
             // end transaction
             await fedora.CommitTransaction(transaction);
 
-            var reObtainedAG = await fedora.GetObject<ArchivalGroup>(archivalGroup.Location);
-            Console.WriteLine("archivalGroup v4Alt at {0}", fedora.GetOrigin(reObtainedAG));
+            var reObtainedAG = await fedora.GetPopulatedArchivalGroup(archivalGroup.Location);
+            Console.WriteLine("archivalGroup v4Alt at {0}", reObtainedAG.Origin);
             return reObtainedAG;
         }
 

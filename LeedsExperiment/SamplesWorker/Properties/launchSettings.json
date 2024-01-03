@@ -2,7 +2,7 @@
   "profiles": {
     "SamplesWorker": {
       "commandName": "Project",
-      "commandLineArgs": "ocfl",
+      "commandLineArgs": "ag",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       },

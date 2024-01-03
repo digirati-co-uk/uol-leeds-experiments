@@ -25,4 +25,9 @@ public class OriginFile
 {
     public required string Hash { get; set; }
     public required string FullPath { get; set; }
+
+    public override string ToString()
+    {
+        return FullPath;
+    }
 }
