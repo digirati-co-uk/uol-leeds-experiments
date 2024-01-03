@@ -1,10 +1,22 @@
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
 using Fedora;
+using Microsoft.Extensions.Configuration;
+using Preservation;
 using SamplesWorker;
 using System.Net.Http.Headers;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddHttpClient<IFedora, Preservation.FedoraWrapper>(client =>
+
+var fedoraAwsOptions = builder.Configuration.GetAWSOptions("Fedora-AWS");
+builder.Services.AddDefaultAWSOptions(fedoraAwsOptions);
+builder.Services.AddAWSService<IAmazonS3>();
+
+builder.Services.Configure<FedoraAwsOptions>(builder.Configuration.GetSection("Fedora-AWS-S3"));
+
+builder.Services.AddSingleton<IStorageMapper, OcflS3StorageMapper>();
+builder.Services.AddHttpClient<IFedora, FedoraWrapper>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["FedoraApiRoot"]!);
     var authHeader = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes(

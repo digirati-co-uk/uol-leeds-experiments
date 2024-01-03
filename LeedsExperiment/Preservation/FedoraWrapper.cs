@@ -434,10 +434,10 @@ public class FedoraWrapper : IFedora
 
         // ?? hmm
 
-        throw new NotImplementedException();
+        
     }
 
-    private async Task<Fedora.Storage.Version[]?> GetFedoraVersions(Uri uri)
+    private async Task<Fedora.Storage.ObjectVersion[]?> GetFedoraVersions(Uri uri)
     {
         var request = MakeHttpRequestMessage(uri.VersionsUri(), HttpMethod.Get)
             .ForJsonLd();
@@ -454,7 +454,7 @@ public class FedoraWrapper : IFedora
             // We're not going to learn anything more than we would by parsing the memento path elements - which is TERRIBLY non-REST-y
             return childIds
                 .Select(id => id.Split('/').Last())
-                .Select(p => new Fedora.Storage.Version { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
+                .Select(p => new Fedora.Storage.ObjectVersion { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
                 .ToArray();
         }
 

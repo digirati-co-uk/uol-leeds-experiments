@@ -3,7 +3,7 @@
 public class StorageMap
 {
     // v1, v2
-    public required Version Version { get; set; }
+    public required ObjectVersion Version { get; set; }
 
     // e.g., S3
     public required string StorageType { get; set; }
@@ -18,7 +18,7 @@ public class StorageMap
     // The actual file path (FullPath in the value) may be versioned.
     public required Dictionary<string, OriginFile> Files { get; set; }
 
-    public required Version[] AllVersions { get; set; }
+    public required ObjectVersion[] AllVersions { get; set; }
 }
 
 public class OriginFile
