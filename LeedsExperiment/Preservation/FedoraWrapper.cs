@@ -496,13 +496,55 @@ public class FedoraWrapper : IFedora
 
         // WithContainedDescriptions could return @graph or it could return a single object if the container has no children
 
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions
+        // =>
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160421
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160432
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160437
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160446
+
         // PROBLEM - I can't just append /fcr:version/20240103160421 because that causes an error if you also ask for .WithContainedDescriptions()
-        // "Invalid request for memento"
-        // presumably because the contained descriptions don't each have that version?
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions
 
-        // but
+        // This is OK:
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160421
+        // But not this
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/fcr:versions/20240103160421?contained=true
+        // Error: Unable to retrieve triples for info:fedora/storage-01/ocfl-expt-01-03-24-16-04-18/image.tiff
 
-        // what's most efficient way?
+        // image.tiff is now a tombstone
+
+        // Similarly:
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/foo/fcr:versions/20240103160421?contained=true
+        // This shows bar.xml (the single contained object) as having a size of 75 - but at timestamp 20240103160421 it didn't, as we can see:
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/foo/bar.xml/fcr:metadata/fcr:versions/20240103160421
+
+        // So the contained versions are (it seems) not asked for at the same version
+
+        // I can't send the accept date header and also ask for withcontaineddescriptions IF one of them is now a tombstone
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18?acceptDate=20240103160421
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18?acceptDate=20240103160421&contained=true
+        // 
+        // I can't even do this:
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/image.tiff/fcr:metadata?acceptDate=20240103160421
+        // although I can ask for it directly
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/image.tiff/fcr:metadata/fcr:versions/20240103160421
+
+        // If I try to just ask for specific versions of everything in my traversal, that will fail:
+        // OK because a specific version exists
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/foo/bar.xml/fcr:metadata/fcr:versions/20240103160432
+        // But not OK:
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/foo/bar.xml/fcr:metadata/fcr:versions/20240103160437
+        // Error: There is no version in info:fedora/storage-01/ocfl-expt-01-03-24-16-04-18/foo/bar.xml/fcr:metadata/fcr:versions/20240103160437 with a created date matching 2024-01-03T16:04:37Z
+
+
+        // BUT I could use acceptDate to see that - 
+        // https://uol.digirati.io/api/fedora/application/ld+json/storage-01/ocfl-expt-01-03-24-16-04-18/foo/bar.xml/fcr:metadata?acceptDate=20240103160437
+        // ...because unlike image.tiff, the resource still exists
+
+        // So, given all this info, how do I traverse an archival group to gather a specific VERSION?
+
+
         var response = await httpClient.SendAsync(request);
         bool hasArchivalGroupHeader = response.HasArchivalGroupHeader();
         if (isArchivalGroup && !hasArchivalGroupHeader)
