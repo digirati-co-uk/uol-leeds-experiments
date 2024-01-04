@@ -3,6 +3,7 @@ using Amazon.S3.Model;
 using Fedora;
 using Fedora.Storage;
 using Fedora.Storage.Ocfl;
+using Fedora.Vocab;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -36,7 +37,7 @@ namespace Preservation
                 {
                     OcflVersion = kvp.Key,
                     MementoDateTime = kvp.Value.Created,
-                    MementoTimestamp = kvp.Value.Created.ToString("yyyyMMddHHmmss")
+                    MementoTimestamp = kvp.Value.Created.ToMementoTimestamp(),
                 })
                .OrderBy(o => o.MementoDateTime)
                .ToList();

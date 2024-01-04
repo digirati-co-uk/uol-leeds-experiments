@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Security.Cryptography;
 using Fedora.ApiModel;
 using Fedora.Vocab;
 
@@ -65,6 +66,22 @@ namespace Preservation
             {
                 requestMessage.Headers.Add("digest", $"{algorithm}={digest}");
             }
+            return requestMessage;
+        }
+
+
+        public static HttpRequestMessage WithAcceptDate(this HttpRequestMessage requestMessage, string? mementoTimestamp)
+        {
+            if (!string.IsNullOrWhiteSpace(mementoTimestamp))
+            {
+                requestMessage.Headers.Add("Accept-Datetime", mementoTimestamp.ToRFC1123());
+            }
+            return requestMessage;
+        }
+
+        public static HttpRequestMessage WithAcceptDate(this HttpRequestMessage requestMessage, DateTime dt)
+        {
+            requestMessage.Headers.Add("Accept-Datetime", dt.ToRFC1123());
             return requestMessage;
         }
 

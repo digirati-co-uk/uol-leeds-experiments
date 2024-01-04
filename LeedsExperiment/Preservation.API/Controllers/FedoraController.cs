@@ -26,11 +26,12 @@ namespace Preservation.API.Controllers
             if (jsonld == "flattened") { jsonLdMode = JsonLdModes.Flattened; }
 
             bool contained = Convert.ToBoolean(Request.Query["contained"]);
+            string? acceptDate = Request.Query["acceptDate"];
 
             // in WebAPI, path is not giving us the full path
             var fullPath = string.Join("/", Request.Path.ToString().Split('/')[5..]);
             var contentType = $"{contentTypeMajor}/{contentTypeMinor}";
-            var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained);
+            var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained, acceptDate);
             return Content(result, contentType);
         }
         

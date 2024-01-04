@@ -2,7 +2,6 @@
 using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -21,7 +20,7 @@ public class FedoraWrapper : IFedora
         this.storageMapper = storageMapper;
     }
 
-    public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false)
+    public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null)
     {
         var req = new HttpRequestMessage();
         req.Headers.Accept.Clear();
@@ -42,6 +41,7 @@ public class FedoraWrapper : IFedora
         {
             req.WithContainedDescriptions();
         }
+        req.WithAcceptDate(acceptDate);
         req.RequestUri = new Uri(path, UriKind.Relative);
         var response = await httpClient.SendAsync(req);
         var raw = await response.Content.ReadAsStringAsync();
@@ -404,49 +404,49 @@ public class FedoraWrapper : IFedora
 
     public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(Uri uri, string? version = null, Transaction? transaction = null)
     {
-        if(version != null)
+        var versions = await GetFedoraVersions(uri);
+        var storageMap = await storageMapper.GetStorageMap(uri, version);
+        MergeVersions(versions, storageMap.AllVersions);
+        ObjectVersion? objectVersion = null;
+        if(!string.IsNullOrWhiteSpace(version))
         {
-            // throw new NotImplementedException("Can't ask for fedora version yet");
-            // we'll need to carry version all the way through this, GetPopulatedContainer will need to take version
+            objectVersion = versions.Single(v => v.MementoTimestamp == version || v.OcflVersion == version);
         }
-        var archivalGroup = await GetPopulatedContainer(uri, true, transaction) as ArchivalGroup;
+
+        var archivalGroup = await GetPopulatedContainer(uri, true, transaction, objectVersion) as ArchivalGroup;
         if(archivalGroup == null)
         {
             return null;
         }
+        if(archivalGroup.Location != uri)
+        {
+            throw new InvalidOperationException("location doesnt match uri");
+        }
 
         archivalGroup.Origin = storageMapper.GetArchivalGroupOrigin(archivalGroup.Location);
-
-        // Partially populate
-        archivalGroup.Versions = await GetFedoraVersions(uri);
-
-        archivalGroup.StorageMap = await storageMapper.GetStorageMap(archivalGroup.Location, version);
-
-        MergeVersions(archivalGroup);
+        archivalGroup.Versions = versions;
+        archivalGroup.StorageMap = storageMap;
 
         return archivalGroup;
     }
 
-    private void MergeVersions(ArchivalGroup archivalGroup)
+    private void MergeVersions(ObjectVersion[] fedoraVersions, ObjectVersion[] ocflVersions)
     {
-        if(archivalGroup.Versions.Length != archivalGroup.StorageMap.AllVersions.Length)
+        if(fedoraVersions.Length != ocflVersions.Length)
         {
             throw new InvalidOperationException("Fedora reports a different number of versions from OCFL");
         }
-        for(int i = 0; i < archivalGroup.Versions.Length; i++)
+        for(int i = 0; i < fedoraVersions.Length; i++)
         {
-            var fedoraVersion = archivalGroup.Versions[i];
-            var ocflVersion = archivalGroup.StorageMap.AllVersions[i];
-            if(fedoraVersion.MementoTimestamp != ocflVersion.MementoTimestamp)
+            if(fedoraVersions[i].MementoTimestamp != ocflVersions[i].MementoTimestamp)
             {
-                throw new InvalidOperationException($"Fedora reports a different MementoTimestamp {fedoraVersion.MementoTimestamp} from OCFL: {ocflVersion.MementoTimestamp}");
+                throw new InvalidOperationException($"Fedora reports a different MementoTimestamp {fedoraVersions[i].MementoTimestamp} from OCFL: {ocflVersions[i].MementoTimestamp}");
             }
-            fedoraVersion.OcflVersion = ocflVersion.OcflVersion;
+            fedoraVersions[i].OcflVersion = ocflVersions[i].OcflVersion;
         }
-        archivalGroup.Version = archivalGroup.StorageMap.Version;
     }
 
-    private async Task<ObjectVersion[]?> GetFedoraVersions(Uri uri)
+    private async Task<ObjectVersion[]> GetFedoraVersions(Uri uri)
     {
         var request = MakeHttpRequestMessage(uri.VersionsUri(), HttpMethod.Get)
             .ForJsonLd();
@@ -463,17 +463,13 @@ public class FedoraWrapper : IFedora
             // We're not going to learn anything more than we would by parsing the memento path elements - which is TERRIBLY non-REST-y
             return childIds
                 .Select(id => id.Split('/').Last())
-                .Select(p => new ObjectVersion { MementoTimestamp = p, MementoDateTime = GetDateFromMemento(p) })
+                .Select(p => new ObjectVersion { MementoTimestamp = p, MementoDateTime = p.DateTimeFromMementoTimestamp() })
                 .OrderBy(ov => ov.MementoTimestamp)
                 .ToArray();
         }
 
     }
 
-    private DateTime GetDateFromMemento(string mementoFormat)
-    {
-        return DateTime.ParseExact(mementoFormat, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None);
-    }
 
     private List<string> GetIdsFromContainsProperty(JsonElement element)
     {
@@ -492,13 +488,19 @@ public class FedoraWrapper : IFedora
         return childIds;
     }
 
-    public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null)
+    public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null, ObjectVersion? objectVersion = null)
     {
         var request = MakeHttpRequestMessage(uri, HttpMethod.Get)
             .ForJsonLd()
             .WithContainedDescriptions();
 
         // WithContainedDescriptions could return @graph or it could return a single object if the container has no children
+
+        // PROBLEM - I can't just append /fcr:version/20240103160421 because that causes an error if you also ask for .WithContainedDescriptions()
+        // "Invalid request for memento"
+        // presumably because the contained descriptions don't each have that version?
+
+        // but
 
         // what's most efficient way?
         var response = await httpClient.SendAsync(request);
