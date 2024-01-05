@@ -52,6 +52,7 @@ namespace Preservation
             ObjectVersion objectVersion = inventoryVersions.Single(v => v.OcflVersion == version || v.MementoTimestamp == version);
 
             var mapFiles = new Dictionary<string, OriginFile>();
+            var hashes = new Dictionary<string, string>();
             var ocflVersion = inventory.Versions[objectVersion.OcflVersion!];
             foreach(var kvp in ocflVersion.State) 
             {
@@ -65,6 +66,7 @@ namespace Preservation
                         Hash = hash, 
                         FullPath = actualPath 
                     };
+                    hashes[hash] = actualPath;
                     foreach(var file in files)
                     {
                         mapFiles[file] = originFile;
@@ -108,7 +110,8 @@ namespace Preservation
                     Root = fedoraAws.Bucket,
                     ObjectPath = agOrigin!,
                     AllVersions = inventoryVersions.ToArray(),
-                    Files = mapFiles
+                    Files = mapFiles,
+                    Hashes = hashes
                 };
             }
             else

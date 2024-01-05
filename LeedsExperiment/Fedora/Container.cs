@@ -1,4 +1,5 @@
 ﻿using Fedora.ApiModel;
+using System.Text.Json.Serialization;
 
 namespace Fedora
 {
@@ -6,12 +7,16 @@ namespace Fedora
     {
         public Container(FedoraJsonLdResponse jsonLdResponse) : base(jsonLdResponse)
         {
+            Type = "Container";
         }
 
-        public bool Populated { get; set; } = false;
+        [JsonPropertyName("containers")]
+        [JsonPropertyOrder(51)]
+        public List<Container> Containers { get; set; } = new List<Container>();
 
-        public required List<Container> Containers { get; set; } = new List<Container>();
-        public required List<Binary> Binaries { get; set; } = new List<Binary>();
+        [JsonPropertyName("binaries")]
+        [JsonPropertyOrder(52)]
+        public List<Binary> Binaries { get; set; } = new List<Binary>();
 
         public override string ToString()
         {

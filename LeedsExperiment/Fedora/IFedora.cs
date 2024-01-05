@@ -4,7 +4,10 @@ namespace Fedora
 {
     public interface IFedora
     {
-        Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null);
+        Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null, bool head = false);
+
+        Task<Resource?> GetObject(Uri uri, Transaction? transaction = null);
+        Task<Resource?> GetObject(string path, Transaction? transaction = null);
 
         Task<T?> GetObject<T>(Uri uri, Transaction? transaction = null) where T: Resource;
         Task<T?> GetObject<T>(string path, Transaction? transaction = null) where T : Resource;

@@ -1,5 +1,6 @@
 ﻿using Fedora.ApiModel;
 using Fedora.Storage;
+using System.Text.Json.Serialization;
 
 namespace Fedora;
 
@@ -7,14 +8,24 @@ public class ArchivalGroup : Container
 {
     public ArchivalGroup(FedoraJsonLdResponse fedoraResponse) : base(fedoraResponse)
     {
-
+        Type = "ArchivalGroup";
     }
 
-    public StorageMap? StorageMap { get; set; }
+    [JsonPropertyName("type")]
+    [JsonPropertyOrder(1)]
+    public string Type { get; } = "ArchivalGroup";
 
+    [JsonPropertyName("version")]
+    [JsonPropertyOrder(2)]
+    public ObjectVersion? Version { get; set; }
+
+    [JsonPropertyName("versions")]
+    [JsonPropertyOrder(3)]
     public ObjectVersion[]? Versions { get; set; }
 
-    public ObjectVersion? Version { get; set; }
+    [JsonPropertyName("storageMap")]
+    [JsonPropertyOrder(101)]
+    public StorageMap? StorageMap { get; set; }
 
     public Uri GetResourceUri(string path)
     {
@@ -34,5 +45,4 @@ public class ArchivalGroup : Container
         return new Uri($"{Location}/{path}");
     }
 
-    public string? Origin { get; set; }
 }

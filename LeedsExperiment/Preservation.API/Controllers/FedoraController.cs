@@ -27,11 +27,16 @@ namespace Preservation.API.Controllers
 
             bool contained = Convert.ToBoolean(Request.Query["contained"]);
             string? acceptDate = Request.Query["acceptDate"];
+            bool head = Convert.ToBoolean(Request.Query["head"]);
 
             // in WebAPI, path is not giving us the full path
             var fullPath = string.Join("/", Request.Path.ToString().Split('/')[5..]);
             var contentType = $"{contentTypeMajor}/{contentTypeMinor}";
-            var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained, acceptDate);
+            var result = await fedora.Proxy(contentType, fullPath, jsonLdMode, contained, acceptDate, head);
+            if (head)
+            {
+                return Content(result, "text/html");
+            }
             return Content(result, contentType);
         }
         

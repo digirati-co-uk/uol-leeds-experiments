@@ -1,4 +1,5 @@
 ﻿using Fedora.ApiModel;
+using System.Text.Json.Serialization;
 
 namespace Fedora;
 
@@ -14,15 +15,38 @@ public abstract class Resource
         LastModifiedBy = jsonLdResponse.LastModifiedBy;
     }
 
+    [JsonPropertyName("type")]
+    [JsonPropertyOrder(1)]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("origin")]
+    [JsonPropertyOrder(4)]
+    public string? Origin { get; set; }
+
+    [JsonPropertyName("name")]
+    [JsonPropertyOrder(11)]
     // The original name of the resource (possibly non-filesystem-safe)
     // Use dc:title on the fedora resource
     public string? Name { get; set; }
 
+    [JsonPropertyName("id")]
+    [JsonPropertyOrder(12)]
     // The Fedora identifier
     public required Uri Location { get; set; }
 
+    [JsonPropertyName("created")]
+    [JsonPropertyOrder(13)]
     public DateTime? Created { get; set; }
+
+    [JsonPropertyName("createdBy")]
+    [JsonPropertyOrder(14)]
     public string? CreatedBy { get; set; }
+
+    [JsonPropertyName("lastModified")]
+    [JsonPropertyOrder(15)]
     public DateTime? LastModified { get; set; }
+
+    [JsonPropertyName("lastModifiedBy")]
+    [JsonPropertyOrder(16)]
     public string? LastModifiedBy { get; set; }
 }

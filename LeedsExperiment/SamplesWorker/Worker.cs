@@ -73,12 +73,6 @@ namespace SamplesWorker
             Console.WriteLine(vAg.Version);
         }
 
-        private async Task<ArchivalGroup> GetAg(string path)
-        {
-            var ag = await fedora.GetPopulatedArchivalGroup(path);
-            return ag;
-        }
-
         private async Task DoDefault()
         {
             // Console.WriteLine("supply something");

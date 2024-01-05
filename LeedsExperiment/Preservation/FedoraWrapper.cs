@@ -2,9 +2,11 @@
 using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
+using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 
 namespace Preservation;
@@ -20,10 +22,31 @@ public class FedoraWrapper : IFedora
         this.storageMapper = storageMapper;
     }
 
-    public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null)
+    public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null, bool head = false)
     {
         var req = new HttpRequestMessage();
         req.Headers.Accept.Clear();
+        req.RequestUri = new Uri(path, UriKind.Relative);
+        req.WithAcceptDate(acceptDate);
+
+        if (head)
+        {
+            req.Method = HttpMethod.Head;
+            var headResponse = await httpClient.SendAsync(req);
+            var sb = new StringBuilder("<table border=1 cellpadding=3>");
+            foreach(var h in headResponse.Headers)
+            {
+                sb.AppendLine($"<tr><td valign=top>{h.Key}</td><td valign=top>");
+                foreach (var v in h.Value)
+                {
+                    sb.AppendLine($"<code>{WebUtility.HtmlEncode(v)}</code><br/>");
+                }
+                sb.AppendLine("</td></tr>");
+            }
+            sb.AppendLine("</table>");
+            return sb.ToString();
+        }
+
         var contentTypeHeader = new MediaTypeWithQualityHeaderValue(contentType);
         if(contentType == ContentTypes.JsonLd)
         {
@@ -41,8 +64,6 @@ public class FedoraWrapper : IFedora
         {
             req.WithContainedDescriptions();
         }
-        req.WithAcceptDate(acceptDate);
-        req.RequestUri = new Uri(path, UriKind.Relative);
         var response = await httpClient.SendAsync(req);
         var raw = await response.Content.ReadAsStringAsync();
         return raw;
@@ -94,22 +115,11 @@ public class FedoraWrapper : IFedora
         {
             if (isArchivalGroup)
             {
-                return new ArchivalGroup(containerResponse)
-                {
-                    Location = containerResponse.Id,
-                    Containers = [],
-                    Binaries = []
-                };
+                return new ArchivalGroup(containerResponse) { Location = containerResponse.Id };
             } 
             else
             {
-                return new Container(containerResponse)
-                {
-                    Location = containerResponse.Id,
-                    Containers = [],
-                    Binaries = []
-                };
-
+                return new Container(containerResponse) { Location = containerResponse.Id };
             }
         }
         return null;
@@ -338,10 +348,39 @@ public class FedoraWrapper : IFedora
         }
         return fedoraResponse;
     }
+
+    public async Task<Resource?> GetObject(string path, Transaction? transaction = null)
+    {
+        var uri = new Uri(httpClient.BaseAddress!, path);
+        return await GetObject(uri, transaction);
+    }
+
     public async Task<T?> GetObject<T>(string path, Transaction? transaction = null) where T : Resource
     {
         var uri = new Uri(httpClient.BaseAddress!, path);
         return await GetObject<T>(uri, transaction);
+    }
+
+    public async Task<Resource?> GetObject(Uri uri, Transaction? transaction = null)
+    {
+        // Make a head request to see what this is
+        var req = new HttpRequestMessage(HttpMethod.Head, uri);
+        req.Headers.Accept.Clear();
+        var headResponse = await httpClient.SendAsync(req);
+        if (headResponse.HasArchivalGroupTypeHeader())
+        {
+            return await GetPopulatedArchivalGroup(uri, null, transaction);
+        }
+        else if(headResponse.HasBinaryTypeHeader())
+        {
+            return await GetObject<Binary>(uri, transaction);
+        }
+        else if (headResponse.HasBasicContainerTypeHeader())
+        {
+            // this is also true for archival group so test this last
+            return await GetPopulatedContainer(uri, false, transaction, null, false);
+        }
+        return null;
     }
 
     public async Task<T?> GetObject<T>(Uri uri, Transaction? transaction = null) where T : Resource
@@ -370,24 +409,14 @@ public class FedoraWrapper : IFedora
             var directoryResponse = await MakeFedoraResponse<FedoraJsonLdResponse>(response);
             if (directoryResponse != null)
             {
-                if (response.HasArchivalGroupHeader())
+                if (response.HasArchivalGroupTypeHeader())
                 {
-                    var ag = new ArchivalGroup(directoryResponse)
-                    {
-                        Location = directoryResponse.Id,
-                        Containers = [],
-                        Binaries = []
-                    };
+                    var ag = new ArchivalGroup(directoryResponse) { Location = directoryResponse.Id };
                     return ag as T;
                 }
                 else
                 {
-                    var container = new Container(directoryResponse)
-                    {
-                        Location = directoryResponse.Id,
-                        Containers = [],
-                        Binaries = []
-                    };
+                    var container = new Container(directoryResponse) { Location = directoryResponse.Id };
                     return container as T;
                 }
             }
@@ -413,7 +442,7 @@ public class FedoraWrapper : IFedora
             objectVersion = versions.Single(v => v.MementoTimestamp == version || v.OcflVersion == version);
         }
 
-        var archivalGroup = await GetPopulatedContainer(uri, true, transaction, objectVersion) as ArchivalGroup;
+        var archivalGroup = await GetPopulatedContainer(uri, true, transaction, objectVersion, true) as ArchivalGroup;
         if(archivalGroup == null)
         {
             return null;
@@ -426,8 +455,25 @@ public class FedoraWrapper : IFedora
         archivalGroup.Origin = storageMapper.GetArchivalGroupOrigin(archivalGroup.Location);
         archivalGroup.Versions = versions;
         archivalGroup.StorageMap = storageMap;
-
+        archivalGroup.Version = versions.Single(v => v.OcflVersion == storageMap.Version.OcflVersion);
+        PopulateOrigins(storageMap, archivalGroup);
         return archivalGroup;
+    }
+
+    private void PopulateOrigins(StorageMap storageMap, Container container)
+    {
+        foreach(var binary in container.Binaries) 
+        {
+            if(storageMap.StorageType == "S3")
+            {
+                // This "s3-ness" needs to be inside an abstracted impl
+                binary.Origin = $"s3://{storageMap.Root}/{storageMap.ObjectPath}/{storageMap.Hashes[binary.Digest!]}";
+            }
+        }
+        foreach(var childContainer in container.Containers)
+        {
+            PopulateOrigins(storageMap, childContainer);
+        }
     }
 
     private void MergeVersions(ObjectVersion[] fedoraVersions, ObjectVersion[] ocflVersions)
@@ -488,11 +534,8 @@ public class FedoraWrapper : IFedora
         return childIds;
     }
 
-    public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null, ObjectVersion? objectVersion = null)
+    public async Task<Container?> GetPopulatedContainer(Uri uri, bool isArchivalGroup, Transaction? transaction = null, ObjectVersion? objectVersion = null, bool recurse = false)
     {
-        var request = MakeHttpRequestMessage(uri, HttpMethod.Get)
-            .ForJsonLd()
-            .WithContainedDescriptions();
 
         // WithContainedDescriptions could return @graph or it could return a single object if the container has no children
 
@@ -543,10 +586,23 @@ public class FedoraWrapper : IFedora
         // ...because unlike image.tiff, the resource still exists
 
         // So, given all this info, how do I traverse an archival group to gather a specific VERSION?
+        // Maybe we just don't support that; only the HEAD version, from this recursive walk, is available as a hierarchy of containers and binaries;
+        // previous versions are only available as OCFL?
 
+        // Or we have a much more expensive traversal, for versioned interactions only, that has to interact with each child binary individually
+        // (can't rely on the efficiency of asking for contained descriptions). 
+
+
+        // UPDATE - for now I will only return the HEAD object structure through the Fedora walk; if we want to access previous versions we will use the OCFL layout.
+        // At some point though we should have a means of traversing the object via the Fedora API, no matter how slow, to verify that the file layout is the same as reported by OCFL.
+
+
+        var request = MakeHttpRequestMessage(uri, HttpMethod.Get)
+            .ForJsonLd()
+            .WithContainedDescriptions();
 
         var response = await httpClient.SendAsync(request);
-        bool hasArchivalGroupHeader = response.HasArchivalGroupHeader();
+        bool hasArchivalGroupHeader = response.HasArchivalGroupTypeHeader();
         if (isArchivalGroup && !hasArchivalGroupHeader)
         {
             throw new InvalidOperationException("Response is not an Archival Group, when Archival Group expected");
@@ -588,22 +644,11 @@ public class FedoraWrapper : IFedora
             Container topContainer;
             if(isArchivalGroup)
             {
-                topContainer = new ArchivalGroup(fedoraObject)
-                {
-                    Location = fedoraObject.Id,
-                    Binaries = [],
-                    Containers = []
-                };
+                topContainer = new ArchivalGroup(fedoraObject) { Location = fedoraObject.Id };
             } 
             else
             {
-                topContainer = new Container(fedoraObject)
-                {
-                    Location = fedoraObject.Id,
-                    Binaries = [],
-                    Containers = []
-                };
-
+                topContainer = new Container(fedoraObject) { Location = fedoraObject.Id };
             }
             // Get the contains property which may be a single value or an array
             List<string> childIds = GetIdsFromContainsProperty(containerAndContained[0]);
@@ -613,7 +658,15 @@ public class FedoraWrapper : IFedora
                 if (resource.HasType("fedora:Container"))
                 {
                     var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource);
-                    var container = await GetPopulatedContainer(fedoraContainer.Id, false, transaction);
+                    Container? container = null;
+                    if (recurse)
+                    {
+                        container = await GetPopulatedContainer(fedoraContainer.Id, false, transaction, objectVersion, true);
+                    }
+                    else
+                    {
+                        container = new Container(fedoraContainer) { Location = fedoraContainer.Id }; 
+                    }
                     topContainer.Containers.Add(container);
                 }
                 else if (resource.HasType("fedora:Binary"))
