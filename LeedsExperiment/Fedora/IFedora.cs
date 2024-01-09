@@ -4,6 +4,8 @@ namespace Fedora
 {
     public interface IFedora
     {
+        Uri GetUri(string path);
+
         Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null, bool head = false);
 
         Task<Resource?> GetObject(Uri uri, Transaction? transaction = null);
@@ -41,6 +43,6 @@ namespace Fedora
         Task RollbackTransaction(Transaction tx);
 
         Task Delete(Uri uri, Transaction? transaction = null);
-
+        Task<Resource?> GetRepositoryRoot(Transaction? transaction = null);
     }
 }

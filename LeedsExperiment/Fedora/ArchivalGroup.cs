@@ -11,10 +11,6 @@ public class ArchivalGroup : Container
         Type = "ArchivalGroup";
     }
 
-    [JsonPropertyName("type")]
-    [JsonPropertyOrder(1)]
-    public string Type { get; } = "ArchivalGroup";
-
     [JsonPropertyName("version")]
     [JsonPropertyOrder(2)]
     public ObjectVersion? Version { get; set; }

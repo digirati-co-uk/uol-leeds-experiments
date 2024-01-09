@@ -1,6 +1,8 @@
-﻿using System.Net.Http.Headers;
+﻿using System;
+using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Security.Cryptography;
+using System.Xml.Linq;
 using Fedora.ApiModel;
 using Fedora.Vocab;
 
@@ -93,7 +95,24 @@ namespace Preservation
 
         public static HttpRequestMessage AsArchivalGroup(this HttpRequestMessage requestMessage)
         {
+            // This tells Fedora it's an archival group:
             requestMessage.Headers.Add("Link", $"<{RepositoryTypes.ArchivalGroup}>;rel=\"type\"");
+
+            // But we want to assign an additional type that will be returned in contained resources
+            //var stringContent = requestMessage.Content;
+            //var turtle = MediaTypeHeaderValue.Parse("text/turtle");
+            //var sparql = "  <> rdf:type <http://purl.org/dc/dcmitype/Collection> ;";
+            //if (stringContent == null)
+            //{
+            //    stringContent = new StringContent(sparql, turtle);
+            //}
+            //else
+            //{
+            //    string oldContent = await stringContent.ReadAsStringAsync();
+            //    stringContent = new StringContent($"{oldContent}\n{sparql}", turtle);
+            //}
+            //requestMessage.Content = stringContent;
+
             return requestMessage;
         }
 
@@ -110,6 +129,21 @@ namespace Preservation
                            PREFIX dc: <http://purl.org/dc/elements/1.1/>
                            INSERT {   
                                <> dc:title "{{title}}" .
+                           }
+                           WHERE { }
+                           """;
+
+            requestMessage.Content = new StringContent(sparql)
+                .WithContentType("application/sparql-update");
+            return requestMessage;
+        }
+
+
+        public static HttpRequestMessage AsInsertTypePatch(this HttpRequestMessage requestMessage, string type)
+        {
+            var sparql = $$"""
+                           INSERT {   
+                               <> a {{type}} .
                            }
                            WHERE { }
                            """;

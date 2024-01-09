@@ -25,13 +25,17 @@ namespace Preservation
             fedoraApi = fedoraApiOptions.Value;
         }
 
+        public async Task<Inventory?> GetInventory(Uri archivalGroupUri)
+        {
+            var agOrigin = GetArchivalGroupOrigin(archivalGroupUri);
+            Inventory? inventory = await GetInventory(agOrigin);
+            return inventory;
+        }
+
         public async Task<StorageMap> GetStorageMap(Uri archivalGroupUri, string? version = null)
         {
             var agOrigin = GetArchivalGroupOrigin(archivalGroupUri);
-
-            var invReq = new GetObjectRequest { BucketName = fedoraAws.Bucket, Key = $"{agOrigin}/inventory.json" };
-            var invResp = await s3Client.GetObjectAsync(invReq);
-            var inventory = JsonSerializer.Deserialize<Inventory>(invResp.ResponseStream);
+            Inventory? inventory = await GetInventory(agOrigin);
             var inventoryVersions = inventory!.Versions
                 .Select(kvp => new ObjectVersion
                 {
@@ -42,7 +46,7 @@ namespace Preservation
                .OrderBy(o => o.MementoDateTime)
                .ToList();
 
-            if(version == null)
+            if (version == null)
             {
                 // Use the latest version
                 version = inventory!.Head!;
@@ -54,20 +58,20 @@ namespace Preservation
             var mapFiles = new Dictionary<string, OriginFile>();
             var hashes = new Dictionary<string, string>();
             var ocflVersion = inventory.Versions[objectVersion.OcflVersion!];
-            foreach(var kvp in ocflVersion.State) 
+            foreach (var kvp in ocflVersion.State)
             {
                 var files = kvp.Value.Where(f => !IsFedoraMetadata(f)).ToList();
-                if(files.Count > 0)
+                if (files.Count > 0)
                 {
                     var hash = kvp.Key;
                     var actualPath = inventory.Manifest[hash][0];// I don't think there'll ever be more than one entry in a Fedora instance - see https://ocfl.io/1.1/spec/#manifest 
-                    var originFile = new OriginFile 
-                    { 
-                        Hash = hash, 
-                        FullPath = actualPath 
+                    var originFile = new OriginFile
+                    {
+                        Hash = hash,
+                        FullPath = actualPath
                     };
                     hashes[hash] = actualPath;
-                    foreach(var file in files)
+                    foreach (var file in files)
                     {
                         mapFiles[file] = originFile;
                     }
@@ -99,8 +103,8 @@ namespace Preservation
             }
 
             if (
-                archivalGroup.HasValue && archivalGroup == true && 
-                objectRoot.HasValue && objectRoot == true && 
+                archivalGroup.HasValue && archivalGroup == true &&
+                objectRoot.HasValue && objectRoot == true &&
                 deleted.HasValue && deleted == false)
             {
                 return new StorageMap()
@@ -119,6 +123,14 @@ namespace Preservation
                 throw new InvalidOperationException("Not an archival object");
             }
 
+        }
+
+        private async Task<Inventory?> GetInventory(string? agOrigin)
+        {
+            var invReq = new GetObjectRequest { BucketName = fedoraAws.Bucket, Key = $"{agOrigin}/inventory.json" };
+            var invResp = await s3Client.GetObjectAsync(invReq);
+            var inventory = JsonSerializer.Deserialize<Inventory>(invResp.ResponseStream);
+            return inventory;
         }
 
         private bool IsFedoraMetadata(string filepath)

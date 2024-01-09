@@ -15,6 +15,11 @@ public abstract class Resource
         LastModifiedBy = jsonLdResponse.LastModifiedBy;
     }
 
+    [JsonPropertyName("@id")]
+    [JsonPropertyOrder(1)]
+    // The URI for this API
+    public Uri? PreservationApiUri { get; set; }
+
     [JsonPropertyName("type")]
     [JsonPropertyOrder(1)]
     public string? Type { get; set; }
@@ -32,7 +37,7 @@ public abstract class Resource
     [JsonPropertyName("id")]
     [JsonPropertyOrder(12)]
     // The Fedora identifier
-    public required Uri Location { get; set; }
+    public Uri Location { get; set; }
 
     [JsonPropertyName("created")]
     [JsonPropertyOrder(13)]

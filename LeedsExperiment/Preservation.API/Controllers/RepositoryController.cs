@@ -18,9 +18,18 @@ namespace Preservation.API.Controllers
 
         [HttpGet(Name = "Browse")]
         [Route("{*path}")]
-        public async Task<Resource?> Index(string path)
+        public async Task<Resource?> Index(string? path = null)
         {
-            var resource = await fedora.GetObject(path);
+            Resource? resource = null;
+            if(path == null)
+            {
+                resource = await fedora.GetRepositoryRoot();
+            }
+            else
+            {
+                resource = await fedora.GetObject(path);
+            }
+            
             return resource;
         }
     }

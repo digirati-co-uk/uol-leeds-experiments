@@ -7,7 +7,23 @@ namespace Fedora
     {
         public Container(FedoraJsonLdResponse jsonLdResponse) : base(jsonLdResponse)
         {
-            Type = "Container";
+            if(jsonLdResponse.Type == null || jsonLdResponse.Type.Length == 0)
+            {
+                throw new InvalidOperationException("No type present");
+            }
+            if(jsonLdResponse.Type.Contains("fedora:RepositoryRoot"))
+            {
+                Type = "RepositoryRoot";
+            }
+            else if(jsonLdResponse.Type.Contains("http://purl.org/dc/dcmitype/Collection"))
+            {
+                // TODO - introduce this dcmi namespace and also check for dcmi:Collection (or whatever prefix)
+                Type = "ArchivalGroup";
+            }
+            else
+            {
+                Type = "Container";
+            }
         }
 
         [JsonPropertyName("containers")]

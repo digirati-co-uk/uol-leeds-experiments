@@ -2,7 +2,7 @@
 using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
-using System.IO;
+using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -15,12 +15,20 @@ public class FedoraWrapper : IFedora
 {
     private readonly HttpClient httpClient;
     private readonly IStorageMapper storageMapper;
+    private readonly PreservationApiOptions apiOptions;
+    private readonly Uri apiUri;
 
-    public FedoraWrapper(HttpClient httpClient, IStorageMapper storageMapper)
+    public FedoraWrapper(
+        HttpClient httpClient,
+        IStorageMapper storageMapper,
+        IOptions<PreservationApiOptions> preservationApiOptions)
     {
         this.httpClient = httpClient;
         this.storageMapper = storageMapper;
+        apiOptions = preservationApiOptions.Value;
+        apiUri = new Uri(apiOptions.Prefix);
     }
+
 
     public async Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null, bool head = false)
     {
@@ -77,7 +85,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name, Transaction? transaction = null)
     {
-        var parent = new Uri(httpClient.BaseAddress!, parentPath);
+        var parent = GetUri(parentPath);
         return await CreateContainerInternal(true, parent, slug, name, transaction) as ArchivalGroup;
     }
     public async Task<Container?> CreateContainer(Uri parent, string slug, string name, Transaction? transaction = null)
@@ -87,7 +95,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<Container?> CreateContainer(string parentPath, string slug, string name, Transaction? transaction = null)
     {
-        var parent = new Uri(httpClient.BaseAddress!, parentPath);
+        var parent = GetUri(parentPath);
         return await CreateContainerInternal(false, parent, slug, name, transaction);
     }
 
@@ -104,6 +112,16 @@ public class FedoraWrapper : IFedora
         var response = await httpClient.SendAsync(req);
         response.EnsureSuccessStatusCode();
 
+        if(isArchivalGroup)
+        {
+            // TODO - could combine this with .WithName(name) and make a more general .WithRdf(string name = null, string type = null)
+            // so that the extra info goes on the initial POST and this little PATCH isn't required
+            var patchReq = MakeHttpRequestMessage(response.Headers.Location!, HttpMethod.Patch)
+                .InTransaction(transaction);
+            patchReq.AsInsertTypePatch("<http://purl.org/dc/dcmitype/Collection>");
+            var patchResponse = await httpClient.SendAsync(patchReq);
+            patchResponse.EnsureSuccessStatusCode();
+        }
         // The body is the new resource URL
         var newReq = MakeHttpRequestMessage(response.Headers.Location!, HttpMethod.Get)
             .InTransaction(transaction)
@@ -113,16 +131,45 @@ public class FedoraWrapper : IFedora
         var containerResponse = await MakeFedoraResponse<FedoraJsonLdResponse>(newResponse);
         if (containerResponse != null)
         {
-            if (isArchivalGroup)
-            {
-                return new ArchivalGroup(containerResponse) { Location = containerResponse.Id };
-            } 
-            else
-            {
-                return new Container(containerResponse) { Location = containerResponse.Id };
-            }
+            return MakeContainer(isArchivalGroup, containerResponse);
         }
         return null;
+    }
+
+    private Container MakeContainer(bool isArchivalGroup, FedoraJsonLdResponse containerResponse)
+    {
+        if (isArchivalGroup)
+        {
+            return new ArchivalGroup(containerResponse) { PreservationApiUri = GetApiUri(containerResponse.Id) };
+        }
+        else
+        {
+            return new Container(containerResponse) { PreservationApiUri = GetApiUri(containerResponse.Id) };
+        }
+    }
+
+    private Binary MakeBinary(BinaryMetadataResponse binaryResponse)
+    {
+        return new Binary(binaryResponse)
+        {
+            PreservationApiUri = GetApiUri(binaryResponse.Id)
+        };
+    }
+
+    private Uri GetApiUri(Uri fedoraUri)
+    {
+        string path = fedoraUri.ToString().Remove(0, httpClient.BaseAddress!.ToString().Length);
+        return new Uri(apiUri, path);
+    }
+
+    public Uri GetUri(string path)
+    {
+        return new Uri(httpClient.BaseAddress!, path);
+    }
+
+    private void AddType(Uri uri, string type, Transaction? transaction)
+    {
+        // The binary resource does not have a dc:title property yet
     }
 
     // Deprecated, but leave the PutOrPost logic for reference
@@ -167,7 +214,7 @@ public class FedoraWrapper : IFedora
         var newResponse = await httpClient.SendAsync(newReq);
 
         var binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(newResponse);
-        if (binaryResponse.Title == null)
+        if (binaryResponse!.Title == null)
         {
             // The binary resource does not have a dc:title property yet
             var patchReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Patch)
@@ -182,20 +229,14 @@ public class FedoraWrapper : IFedora
             var afterPatchResponse = await httpClient.SendAsync(retryMetadataReq);
             binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(afterPatchResponse);
         }
-        var binary = new Binary(binaryResponse)
-        {
-            Location = binaryResponse.Id,
-            FileName = binaryResponse.FileName,
-            Size = Convert.ToInt64(binaryResponse.Size),
-            Digest = binaryResponse.Digest?.Split(':')[^1],
-            ContentType = binaryResponse.ContentType
-        };
+        Binary binary = MakeBinary(binaryResponse!);
         if (binary.Digest != expected)
         {
             throw new InvalidOperationException("Fedora checksum doesn't match");
         }
         return binary;
     }
+
 
     private HttpRequestMessage MakeBinaryPutOrPost(HttpMethod httpMethod, Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction, string? expected)
     {
@@ -349,16 +390,19 @@ public class FedoraWrapper : IFedora
         return fedoraResponse;
     }
 
+    public async Task<Resource?> GetRepositoryRoot(Transaction? transaction = null)
+    {
+        return await GetObject(GetUri(""), transaction);
+    }
+
     public async Task<Resource?> GetObject(string path, Transaction? transaction = null)
     {
-        var uri = new Uri(httpClient.BaseAddress!, path);
-        return await GetObject(uri, transaction);
+        return await GetObject(GetUri(path), transaction);
     }
 
     public async Task<T?> GetObject<T>(string path, Transaction? transaction = null) where T : Resource
     {
-        var uri = new Uri(httpClient.BaseAddress!, path);
-        return await GetObject<T>(uri, transaction);
+        return await GetObject<T>(GetUri(path), transaction);
     }
 
     public async Task<Resource?> GetObject(Uri uri, Transaction? transaction = null)
@@ -394,31 +438,14 @@ public class FedoraWrapper : IFedora
         if (isBinary)
         {
             var fileResponse = await MakeFedoraResponse<BinaryMetadataResponse>(response);
-            var binary = new Binary(fileResponse)
-            {
-                Location = fileResponse.Id,
-                FileName = fileResponse.FileName,
-                Size = Convert.ToInt64(fileResponse.Size),
-                Digest = fileResponse.Digest,
-                ContentType = fileResponse.ContentType
-            };
-            return binary as T;
+            return MakeBinary(fileResponse!) as T;
         }
         else
         {
             var directoryResponse = await MakeFedoraResponse<FedoraJsonLdResponse>(response);
             if (directoryResponse != null)
             {
-                if (response.HasArchivalGroupTypeHeader())
-                {
-                    var ag = new ArchivalGroup(directoryResponse) { Location = directoryResponse.Id };
-                    return ag as T;
-                }
-                else
-                {
-                    var container = new Container(directoryResponse) { Location = directoryResponse.Id };
-                    return container as T;
-                }
+                return MakeContainer(response.HasArchivalGroupTypeHeader(), directoryResponse) as T;
             }
         }
         return null;
@@ -426,7 +453,7 @@ public class FedoraWrapper : IFedora
 
     public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(string path, string? version = null, Transaction? transaction = null)
     {
-        var uri = new Uri(httpClient.BaseAddress!, path);
+        Uri uri = GetUri(path);
         return await GetPopulatedArchivalGroup(uri, version, transaction);
     }
 
@@ -641,15 +668,8 @@ public class FedoraWrapper : IFedora
             // Make a map of the IDs
             Dictionary<string, JsonElement> dict = containerAndContained.ToDictionary(x => x.GetProperty("@id").GetString()!);
             var fedoraObject = JsonSerializer.Deserialize<FedoraJsonLdResponse>(containerAndContained[0]);
-            Container topContainer;
-            if(isArchivalGroup)
-            {
-                topContainer = new ArchivalGroup(fedoraObject) { Location = fedoraObject.Id };
-            } 
-            else
-            {
-                topContainer = new Container(fedoraObject) { Location = fedoraObject.Id };
-            }
+            Container topContainer = MakeContainer(isArchivalGroup, fedoraObject!);
+
             // Get the contains property which may be a single value or an array
             List<string> childIds = GetIdsFromContainsProperty(containerAndContained[0]);
             foreach (var id in childIds)
@@ -657,7 +677,7 @@ public class FedoraWrapper : IFedora
                 var resource = dict[id];
                 if (resource.HasType("fedora:Container"))
                 {
-                    var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource);
+                    var fedoraContainer = JsonSerializer.Deserialize<FedoraJsonLdResponse>(resource)!;
                     Container? container = null;
                     if (recurse)
                     {
@@ -665,17 +685,14 @@ public class FedoraWrapper : IFedora
                     }
                     else
                     {
-                        container = new Container(fedoraContainer) { Location = fedoraContainer.Id }; 
+                        container = new Container(fedoraContainer) { PreservationApiUri = GetApiUri(fedoraContainer.Id) }; 
                     }
-                    topContainer.Containers.Add(container);
+                    topContainer.Containers.Add(container!);
                 }
                 else if (resource.HasType("fedora:Binary"))
                 {
                     var fedoraBinary = JsonSerializer.Deserialize<BinaryMetadataResponse>(resource);
-                    var binary = new Binary(fedoraBinary)
-                    {
-                        Location = fedoraBinary.Id,
-                    };
+                    var binary = new Binary(fedoraBinary!) { PreservationApiUri = GetApiUri(fedoraBinary!.Id) };
                     topContainer.Binaries.Add(binary);
                 }
             }
