@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fedora\Fedora.csproj" />
+    <ProjectReference Include="..\PreservationApiClient\PreservationApiClient.csproj" />
     <ProjectReference Include="..\Preservation\Preservation.csproj" />
   </ItemGroup>
 

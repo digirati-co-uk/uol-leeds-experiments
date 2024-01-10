@@ -1,7 +1,10 @@
-﻿namespace Preservation.API
+﻿using Fedora;
+using Fedora.Abstractions;
+
+namespace Preservation;
+
+public interface IPreservation
 {
-    public interface IPreservation
-    {
-        Task<WeatherForecast[]> Test();
-    }
+    Task<Resource?> GetResource(string? path);
+    string GetInternalPath(Uri preservationApiUri);
 }

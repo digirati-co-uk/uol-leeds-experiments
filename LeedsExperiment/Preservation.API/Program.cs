@@ -16,6 +16,8 @@ var fedoraAwsOptions = builder.Configuration.GetAWSOptions("Fedora-AWS");
 builder.Services.AddDefaultAWSOptions(fedoraAwsOptions);
 builder.Services.AddAWSService<IAmazonS3>();
 
+builder.Services.AddMemoryCache();
+
 builder.Services.Configure<PreservationApiOptions>(builder.Configuration.GetSection("Preservation-API"));
 builder.Services.Configure<FedoraAwsOptions>(builder.Configuration.GetSection("Fedora-AWS-S3"));
 var apiConfig = builder.Configuration.GetSection("Fedora-API");

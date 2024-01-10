@@ -1,7 +1,9 @@
 ﻿using Fedora;
+using Fedora.Abstractions;
 using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Http.Headers;
@@ -17,16 +19,21 @@ public class FedoraWrapper : IFedora
     private readonly IStorageMapper storageMapper;
     private readonly PreservationApiOptions apiOptions;
     private readonly Uri apiUri;
+    private readonly IMemoryCache cache;
+    private readonly int fedoraRootSegments;
 
     public FedoraWrapper(
         HttpClient httpClient,
         IStorageMapper storageMapper,
-        IOptions<PreservationApiOptions> preservationApiOptions)
+        IOptions<PreservationApiOptions> preservationApiOptions,
+        IMemoryCache memoryCache)
     {
         this.httpClient = httpClient;
         this.storageMapper = storageMapper;
         apiOptions = preservationApiOptions.Value;
         apiUri = new Uri(apiOptions.Prefix);
+        fedoraRootSegments = httpClient.BaseAddress!.Segments.Length;
+        cache = memoryCache;
     }
 
 
@@ -158,8 +165,13 @@ public class FedoraWrapper : IFedora
 
     private Uri GetApiUri(Uri fedoraUri)
     {
-        string path = fedoraUri.ToString().Remove(0, httpClient.BaseAddress!.ToString().Length);
+        string path = GetInternalPath(fedoraUri);
         return new Uri(apiUri, path);
+    }
+
+    private string GetInternalPath(Uri fedoraUri)
+    {
+        return fedoraUri.ToString().Remove(0, httpClient.BaseAddress!.ToString().Length);
     }
 
     public Uri GetUri(string path)
@@ -415,16 +427,34 @@ public class FedoraWrapper : IFedora
         {
             return await GetPopulatedArchivalGroup(uri, null, transaction);
         }
-        else if(headResponse.HasBinaryTypeHeader())
+        
+        var storageMap = await FindParentStorageMap(uri);
+        Resource? resource = null;
+        if(headResponse.HasBinaryTypeHeader())
         {
-            return await GetObject<Binary>(uri, transaction);
+            var binary = await GetObject<Binary>(uri, transaction);
+            if(storageMap != null && binary != null)
+            {
+                PopulateOrigin(storageMap, binary);
+            }
+            resource = binary;
         }
         else if (headResponse.HasBasicContainerTypeHeader())
         {
             // this is also true for archival group so test this last
-            return await GetPopulatedContainer(uri, false, transaction, null, false);
+            var container = await GetPopulatedContainer(uri, false, transaction, null, false);
+            if (storageMap != null && container != null)
+            {
+                PopulateOrigins(storageMap, container);
+            }
+            resource = container;
         }
-        return null;
+        if (storageMap != null && resource != null)
+        {
+            resource.PartOf = storageMap.ArchivalGroup;
+            resource.PreservationApiPartOf = GetApiUri(storageMap.ArchivalGroup);
+        }
+        return resource;
     }
 
     public async Task<T?> GetObject<T>(Uri uri, Transaction? transaction = null) where T : Resource
@@ -457,11 +487,70 @@ public class FedoraWrapper : IFedora
         return await GetPopulatedArchivalGroup(uri, version, transaction);
     }
 
+    private async Task<StorageMap> GetCacheableStorageMap(Uri archivalGroupUri, string? version = null, bool refresh = false)
+    {
+        string cacheKey = GetStorageMapCacheKey(archivalGroupUri, version);
+        if (refresh || !cache.TryGetValue(cacheKey, out StorageMap? storageMap))
+        {
+            storageMap = await storageMapper.GetStorageMap(archivalGroupUri, version);
+            if (storageMap != null)
+            {
+                var cacheOpts = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(apiOptions.StorageMapCacheTimeSeconds));
+                cache.Set(cacheKey, storageMap, cacheOpts);
+            }
+        }
+        return storageMap;
+    }
+
+    /// <summary>
+    /// Walk up the Uri of a resource until we get to an ArchivalGroup or to the Fedora root
+    /// </summary>
+    /// <param name="resourceUri"></param>
+    /// <returns></returns>
+    private async Task<StorageMap?> FindParentStorageMap(Uri resourceUri)
+    {
+        var testUris = new List<Uri>();
+
+        for (int i = resourceUri.Segments.Length - 1; i > fedoraRootSegments; i--)
+        {
+            // work back along the Uri until we reach the root
+            var fedoraUri = GetUri(string.Join('/', resourceUri.Segments[fedoraRootSegments..i].Select(s => s.Trim('/'))));
+            testUris.Add(fedoraUri);
+        }
+        StorageMap? storageMap;
+        // first test the cache
+        foreach (var testUri in testUris)
+        {
+            if (cache.TryGetValue(GetStorageMapCacheKey(testUri, null), out storageMap))
+            {
+                return storageMap;
+            }
+        }
+        // now we need to actually probe for a storage map
+        foreach (var testUri in testUris)
+        {
+            var testReq = new HttpRequestMessage(HttpMethod.Head, testUri);
+            testReq.Headers.Accept.Clear();
+            var testResponse = await httpClient.SendAsync(testReq);
+            if (testResponse.HasArchivalGroupTypeHeader())
+            {
+                storageMap = await GetCacheableStorageMap(testUri);
+                return storageMap;
+            }
+        }
+        return null;
+    }
+
+    private static string GetStorageMapCacheKey(Uri archivalGroupUri, string? version)
+    {
+        return $"{archivalGroupUri}?version={version}";
+    }
 
     public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(Uri uri, string? version = null, Transaction? transaction = null)
     {
         var versions = await GetFedoraVersions(uri);
-        var storageMap = await storageMapper.GetStorageMap(uri, version);
+        var storageMap = await GetCacheableStorageMap(uri, version, true);
         MergeVersions(versions, storageMap.AllVersions);
         ObjectVersion? objectVersion = null;
         if(!string.IsNullOrWhiteSpace(version))
@@ -489,17 +578,22 @@ public class FedoraWrapper : IFedora
 
     private void PopulateOrigins(StorageMap storageMap, Container container)
     {
-        foreach(var binary in container.Binaries) 
+        foreach(var binary in container.Binaries)
         {
-            if(storageMap.StorageType == "S3")
-            {
-                // This "s3-ness" needs to be inside an abstracted impl
-                binary.Origin = $"s3://{storageMap.Root}/{storageMap.ObjectPath}/{storageMap.Hashes[binary.Digest!]}";
-            }
+            PopulateOrigin(storageMap, binary);
         }
-        foreach(var childContainer in container.Containers)
+        foreach (var childContainer in container.Containers)
         {
             PopulateOrigins(storageMap, childContainer);
+        }
+    }
+
+    private static void PopulateOrigin(StorageMap storageMap, Binary binary)
+    {
+        if (storageMap.StorageType == "S3")
+        {
+            // This "s3-ness" needs to be inside an abstracted impl
+            binary.Origin = $"s3://{storageMap.Root}/{storageMap.ObjectPath}/{storageMap.Hashes[binary.Digest!]}";
         }
     }
 
@@ -696,7 +790,6 @@ public class FedoraWrapper : IFedora
                     topContainer.Binaries.Add(binary);
                 }
             }
-
             return topContainer;
         }
     }

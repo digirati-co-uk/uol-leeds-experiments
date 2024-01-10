@@ -38,6 +38,10 @@ public class StorageMap
     [JsonPropertyName("allVersions")]
     [JsonPropertyOrder(8)]
     public required ObjectVersion[] AllVersions { get; set; }
+
+    [JsonPropertyName("archivalGroup")]
+    [JsonPropertyOrder(8)]
+    public required Uri ArchivalGroup { get; set; }
 }
 
 public class OriginFile

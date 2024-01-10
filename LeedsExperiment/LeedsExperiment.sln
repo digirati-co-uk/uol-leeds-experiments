@@ -18,7 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "notes", "notes", "{FFBB9C8F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SamplesWorker", "SamplesWorker\SamplesWorker.csproj", "{3FAAC878-61C8-43F1-8963-D99B4548E326}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FedoraTests", "FedoraTests\FedoraTests.csproj", "{DB5452C1-837D-46AE-A5FC-B939818A83CF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FedoraTests", "FedoraTests\FedoraTests.csproj", "{DB5452C1-837D-46AE-A5FC-B939818A83CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PreservationApiClient", "PreservationApiClient\PreservationApiClient.csproj", "{2714D982-D2B2-49CE-98FA-104594A26ABF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +52,10 @@ Global
 		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB5452C1-837D-46AE-A5FC-B939818A83CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2714D982-D2B2-49CE-98FA-104594A26ABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2714D982-D2B2-49CE-98FA-104594A26ABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2714D982-D2B2-49CE-98FA-104594A26ABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2714D982-D2B2-49CE-98FA-104594A26ABF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

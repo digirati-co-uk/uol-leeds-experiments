@@ -1,6 +1,5 @@
 ﻿using Fedora;
-using Fedora.Vocab;
-using Microsoft.AspNetCore.Http;
+using Fedora.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Preservation.API.Controllers
@@ -18,18 +17,23 @@ namespace Preservation.API.Controllers
 
         [HttpGet(Name = "Browse")]
         [Route("{*path}")]
-        public async Task<Resource?> Index(string? path = null)
+        public async Task<ActionResult<Resource?>> Index(string? path = null)
         {
-            Resource? resource = null;
-            if(path == null)
+            Resource? resource;
+            if (string.IsNullOrEmpty(path))
             {
                 resource = await fedora.GetRepositoryRoot();
             }
             else
             {
+                if (path.EndsWith("/"))
+                {
+                    var fullPathString = Request.Path.ToString().TrimEnd('/');
+                    return Redirect(fullPathString);
+                }
                 resource = await fedora.GetObject(path);
             }
-            
+
             return resource;
         }
     }

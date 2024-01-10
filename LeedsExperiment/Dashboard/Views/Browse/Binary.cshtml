@@ -1,0 +1,15 @@
+﻿@using Dashboard.Helpers
+@model Fedora.Abstractions.Binary
+
+<div>
+    @if (ViewBag.ArchivalGroupPath != null)
+    {
+        <div class="alert alert-primary" role="alert">
+            Part of an <i>Archival Group</i>: <a href="/browse/@ViewBag.ArchivalGroupPath">@ViewBag.ArchivalGroupPath</a>
+        </div>
+    }
+
+    <h1 class="display-4">📄 @Model.GetDisplayName()</h1>
+
+    <partial name="_CommonMetadata" model="Model" />
+</div>

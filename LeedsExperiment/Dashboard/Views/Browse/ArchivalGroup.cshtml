@@ -1,0 +1,10 @@
+﻿@using Dashboard.Helpers
+@model Fedora.Abstractions.ArchivalGroup
+
+<div>
+    <div class="alert alert-primary" role="alert">
+        <h1 class="display-4">📦 @Model.GetDisplayName()</h1>
+    </div>
+
+    <partial name="_CommonMetadata" model="Model" />
+</div>

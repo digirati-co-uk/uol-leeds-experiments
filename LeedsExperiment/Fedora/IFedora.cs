@@ -1,4 +1,5 @@
-﻿using Fedora.ApiModel;
+﻿using Fedora.Abstractions;
+using Fedora.ApiModel;
 
 namespace Fedora
 {

@@ -1,7 +1,7 @@
 ﻿using Fedora.ApiModel;
 using System.Text.Json.Serialization;
 
-namespace Fedora;
+namespace Fedora.Abstractions;
 
 public abstract class Resource
 {
@@ -15,6 +15,10 @@ public abstract class Resource
         LastModifiedBy = jsonLdResponse.LastModifiedBy;
     }
 
+    protected Resource()
+    {
+    }
+
     [JsonPropertyName("@id")]
     [JsonPropertyOrder(1)]
     // The URI for this API
@@ -26,6 +30,7 @@ public abstract class Resource
 
     [JsonPropertyName("origin")]
     [JsonPropertyOrder(4)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Origin { get; set; }
 
     [JsonPropertyName("name")]
@@ -37,21 +42,41 @@ public abstract class Resource
     [JsonPropertyName("id")]
     [JsonPropertyOrder(12)]
     // The Fedora identifier
-    public Uri Location { get; set; }
+    public Uri? Location { get; set; }
+
+    [JsonPropertyName("partOf")]
+    [JsonPropertyOrder(13)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Uri? PartOf { get; set; }
+
+    [JsonPropertyName("@partOf")]
+    [JsonPropertyOrder(14)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Uri? PreservationApiPartOf { get; set; }
 
     [JsonPropertyName("created")]
-    [JsonPropertyOrder(13)]
+    [JsonPropertyOrder(16)]
     public DateTime? Created { get; set; }
 
     [JsonPropertyName("createdBy")]
-    [JsonPropertyOrder(14)]
+    [JsonPropertyOrder(17)]
     public string? CreatedBy { get; set; }
 
     [JsonPropertyName("lastModified")]
-    [JsonPropertyOrder(15)]
+    [JsonPropertyOrder(18)]
     public DateTime? LastModified { get; set; }
 
     [JsonPropertyName("lastModifiedBy")]
-    [JsonPropertyOrder(16)]
+    [JsonPropertyOrder(19)]
     public string? LastModifiedBy { get; set; }
+
+    public string? GetSlug()
+    {
+        if(Location != null)
+        {
+            return Location.Segments[^1];
+        }
+        return null;
+    }
+
 }
