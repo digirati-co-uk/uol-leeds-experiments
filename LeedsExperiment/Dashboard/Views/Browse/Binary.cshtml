@@ -1,15 +1,33 @@
-﻿@using Dashboard.Helpers
+﻿@using Dashboard.Borrowed
+@using Dashboard.Helpers
+@using Utils
 @model Fedora.Abstractions.Binary
 
 <div>
-    @if (ViewBag.ArchivalGroupPath != null)
-    {
-        <div class="alert alert-primary" role="alert">
-            Part of an <i>Archival Group</i>: <a href="/browse/@ViewBag.ArchivalGroupPath">@ViewBag.ArchivalGroupPath</a>
-        </div>
-    }
+    <partial name="_ArchivalGroupHeader" />
+
+    <partial name="_ParentLink" />
 
     <h1 class="display-4">📄 @Model.GetDisplayName()</h1>
 
     <partial name="_CommonMetadata" model="Model" />
+
+    <table class="table">
+        <tr>
+            <th scope="row">File name</th>
+            <td>@Model.FileName</td>
+        </tr>
+        <tr>
+            <th scope="row">Content type</th>
+            <td>@Model.ContentType</td>
+        </tr>
+        <tr>
+            <th scope="row">Size</th>
+            <td>@StringUtils.FormatFileSize(Model.Size, true)</td>
+        </tr>
+        <tr>
+            <th scope="row">Origin</th>
+            <td><a target="_blank" href="@S3Util.GetAwsConsoleUri(Model.Origin)">@Model.Origin</a></td>
+        </tr>
+    </table>
 </div>

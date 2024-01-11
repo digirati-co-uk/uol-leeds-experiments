@@ -44,6 +44,11 @@ public abstract class Resource
     // The Fedora identifier
     public Uri? Location { get; set; }
 
+    [JsonPropertyName("objectPath")]
+    [JsonPropertyOrder(12)]
+    // The Fedora internal path identifier
+    public string? ObjectPath { get; set; }
+
     [JsonPropertyName("partOf")]
     [JsonPropertyOrder(13)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

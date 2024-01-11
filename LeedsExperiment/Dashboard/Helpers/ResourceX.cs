@@ -11,9 +11,9 @@ public static class ResourceX
         if (resource.Type == "RepositoryRoot") return "(Root of repository)";
 
         var slug = resource.GetSlug();
-        if(!string.IsNullOrWhiteSpace(slug)) return slug;
+        if(!string.IsNullOrWhiteSpace(slug)) return $"[{slug}]";
 
-        return $"[{resource.GetType().Name}]";
+        return $"[({resource.GetType().Name})]";
     }
 
 }

@@ -1,6 +1,9 @@
 ﻿using Fedora.Abstractions;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Preservation;
+using System;
+using Utils;
 
 namespace Dashboard.Controllers;
 
@@ -29,7 +32,12 @@ public class BrowseController : Controller
         {
             ViewBag.ArchivalGroupPath = preservation.GetInternalPath(resource.PreservationApiPartOf);
         }
-        switch(resource.Type)
+        var reqPath = Request.Path.Value?.TrimEnd('/');
+        if (reqPath.HasText())
+        {
+            ViewBag.Parent = reqPath[0..reqPath.LastIndexOf('/')];
+        }
+        switch (resource.Type)
         {
             case "Container":
             case "RepositoryRoot":

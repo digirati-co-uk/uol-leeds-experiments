@@ -1,25 +1,22 @@
 ﻿@using Dashboard.Helpers
+@using Utils
 @model Fedora.Abstractions.Container
 
 <div>
-    @if (ViewBag.ArchivalGroupPath != null)
+    <partial name="_ArchivalGroupHeader" />
+
+    @if (Model.Type == "RepositoryRoot")
     {
-        <div class="alert alert-primary" role="alert">
-            Part of an <i>Archival Group</i>: <a href="/browse/@ViewBag.ArchivalGroupPath">@ViewBag.ArchivalGroupPath</a>
-        </div>
+        <h1 class="display-4">🏠 @Model.GetDisplayName()</h1>
+    } 
+    else
+    {
+        <partial name="_ParentLink" />
+
+        <h1 class="display-4">📁 @Model.GetDisplayName()</h1>
+        <partial name="_CommonMetadata" model="Model" />
     }
 
-    <h1 class="display-4">@(Model.Type == "RepositoryRoot") ? "🏠" : "📁") @Model.GetDisplayName()</h1>
+    <partial name="_ContainerTable" model="Model" />
 
-    <partial name="_CommonMetadata" model="Model" />
-
-    @foreach(var container in Model.Containers)
-    {
-        <partial name="_SimpleContainer" model="container" />
-    }
-
-    @foreach (var binary in Model.Binaries)
-    {
-        <partial name="_SimpleBinary" model="binary" />
-    }
 </div>

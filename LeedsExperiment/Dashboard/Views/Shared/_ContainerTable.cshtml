@@ -1,0 +1,51 @@
+﻿@using Dashboard.Helpers
+@using Utils
+@model Fedora.Abstractions.Container
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col"></th>
+            <th scope="col">Name</th>
+            <th scope="col">Slug</th>
+            <th scope="col">Type</th>
+            <th scope="col">Created</th>
+            <th scope="col">LastModified</th>
+            <th scope="col">Filename</th>
+            <th scope="col">Content type</th>
+            <th scope="col">Size</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var container in Model.Containers)
+        {
+            <tr>
+                <td>@(container.Type == "ArchivalGroup" ? "📦" : "📁")</td>
+                <td><a href="/browse/@container.ObjectPath">@container.GetDisplayName()</a></td>
+                <td>@container.GetSlug()</td>
+                <td>@container.Type</td>
+                <td>@StringUtils.GetLocalDate(container.Created)</td>
+                <td>@StringUtils.GetLocalDate(container.LastModified)</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        }
+
+        @foreach (var binary in Model.Binaries)
+        {
+            <tr>
+                <td>📄</td>
+                <td><a href="/browse/@binary.ObjectPath">@binary.GetDisplayName()</a></td>
+                <td>@binary.GetSlug()</td>
+                <td>@binary.Type</td>
+                <td>@StringUtils.GetLocalDate(binary.Created)</td>
+                <td>@StringUtils.GetLocalDate(binary.LastModified)</td>
+                <td>@binary.FileName</td>
+                <td>@binary.ContentType</td>
+                <td>@StringUtils.FormatFileSize(binary.Size, true)</td>
+            </tr>
+        }
+
+    </tbody>
+</table>

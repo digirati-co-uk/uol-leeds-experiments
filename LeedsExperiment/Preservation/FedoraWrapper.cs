@@ -20,7 +20,8 @@ public class FedoraWrapper : IFedora
     private readonly PreservationApiOptions apiOptions;
     private readonly Uri apiUri;
     private readonly IMemoryCache cache;
-    private readonly int fedoraRootSegments;
+    private readonly int fedoraRootSegmentsLength;
+    private readonly int baseAddressLength;
 
     public FedoraWrapper(
         HttpClient httpClient,
@@ -32,7 +33,8 @@ public class FedoraWrapper : IFedora
         this.storageMapper = storageMapper;
         apiOptions = preservationApiOptions.Value;
         apiUri = new Uri(apiOptions.Prefix);
-        fedoraRootSegments = httpClient.BaseAddress!.Segments.Length;
+        fedoraRootSegmentsLength = httpClient.BaseAddress!.Segments.Length;
+        baseAddressLength = httpClient.BaseAddress!.ToString().Length;
         cache = memoryCache;
     }
 
@@ -147,11 +149,19 @@ public class FedoraWrapper : IFedora
     {
         if (isArchivalGroup)
         {
-            return new ArchivalGroup(containerResponse) { PreservationApiUri = GetApiUri(containerResponse.Id) };
+            return new ArchivalGroup(containerResponse) 
+            { 
+                ObjectPath = GetObjectPath(containerResponse.Id),
+                PreservationApiUri = GetApiUri(containerResponse.Id)
+            };
         }
         else
         {
-            return new Container(containerResponse) { PreservationApiUri = GetApiUri(containerResponse.Id) };
+            return new Container(containerResponse)
+            {
+                ObjectPath = GetObjectPath(containerResponse.Id),
+                PreservationApiUri = GetApiUri(containerResponse.Id)
+            };
         }
     }
 
@@ -159,19 +169,20 @@ public class FedoraWrapper : IFedora
     {
         return new Binary(binaryResponse)
         {
+            ObjectPath = GetObjectPath(binaryResponse.Id),
             PreservationApiUri = GetApiUri(binaryResponse.Id)
         };
     }
 
     private Uri GetApiUri(Uri fedoraUri)
     {
-        string path = GetInternalPath(fedoraUri);
+        string path = GetObjectPath(fedoraUri);
         return new Uri(apiUri, path);
     }
 
-    private string GetInternalPath(Uri fedoraUri)
+    private string GetObjectPath(Uri fedoraUri)
     {
-        return fedoraUri.ToString().Remove(0, httpClient.BaseAddress!.ToString().Length);
+        return fedoraUri.ToString().Remove(0, baseAddressLength);
     }
 
     public Uri GetUri(string path)
@@ -512,10 +523,10 @@ public class FedoraWrapper : IFedora
     {
         var testUris = new List<Uri>();
 
-        for (int i = resourceUri.Segments.Length - 1; i > fedoraRootSegments; i--)
+        for (int i = resourceUri.Segments.Length - 1; i > fedoraRootSegmentsLength; i--)
         {
             // work back along the Uri until we reach the root
-            var fedoraUri = GetUri(string.Join('/', resourceUri.Segments[fedoraRootSegments..i].Select(s => s.Trim('/'))));
+            var fedoraUri = GetUri(string.Join('/', resourceUri.Segments[fedoraRootSegmentsLength..i].Select(s => s.Trim('/'))));
             testUris.Add(fedoraUri);
         }
         StorageMap? storageMap;
@@ -779,14 +790,22 @@ public class FedoraWrapper : IFedora
                     }
                     else
                     {
-                        container = new Container(fedoraContainer) { PreservationApiUri = GetApiUri(fedoraContainer.Id) }; 
+                        container = new Container(fedoraContainer)
+                        {
+                            ObjectPath = GetObjectPath(fedoraContainer.Id),
+                            PreservationApiUri = GetApiUri(fedoraContainer.Id)
+                        };
                     }
                     topContainer.Containers.Add(container!);
                 }
                 else if (resource.HasType("fedora:Binary"))
                 {
                     var fedoraBinary = JsonSerializer.Deserialize<BinaryMetadataResponse>(resource);
-                    var binary = new Binary(fedoraBinary!) { PreservationApiUri = GetApiUri(fedoraBinary!.Id) };
+                    var binary = new Binary(fedoraBinary!)
+                    {
+                        ObjectPath = GetObjectPath(fedoraBinary!.Id),
+                        PreservationApiUri = GetApiUri(fedoraBinary.Id)
+                    };
                     topContainer.Binaries.Add(binary);
                 }
             }
