@@ -583,7 +583,10 @@ public class FedoraWrapper : IFedora
         archivalGroup.Versions = versions;
         archivalGroup.StorageMap = storageMap;
         archivalGroup.Version = versions.Single(v => v.OcflVersion == storageMap.Version.OcflVersion);
-        PopulateOrigins(storageMap, archivalGroup);
+        if(archivalGroup.Version == archivalGroup.StorageMap.HeadVersion)
+        {
+            PopulateOrigins(storageMap, archivalGroup);
+        }
         return archivalGroup;
     }
 

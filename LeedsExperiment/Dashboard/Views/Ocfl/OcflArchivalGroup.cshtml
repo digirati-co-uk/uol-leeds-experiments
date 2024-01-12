@@ -1,0 +1,88 @@
+﻿@using Dashboard.Helpers
+@using Utils
+@model Fedora.Abstractions.ArchivalGroup
+
+<div>
+    <div class="alert alert-primary" role="alert">
+        <h1 class="display-4">📦 @Model.GetDisplayName()</h1>    
+        <p>
+            Version: <strong>@Model.Version!.OcflVersion</strong> - 
+            @if(Model.Version.Equals(Model.StorageMap!.HeadVersion))
+            {
+                <em>This is the current (head) version.</em>
+            }
+            else
+            {
+                <em>This is a <strong>previous</strong> version.</em>
+            }
+        </p>
+        <a href="/browse/@ViewBag.Path">Browse</a>
+    </div>
+
+    <partial name="_CommonMetadata" model="Model" />
+
+    <h2>Versions</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>OCFL version</th>
+                <th>Memento</th>
+                <th>Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var version in Model.Versions!.OrderByDescending(v => v.MementoDateTime))
+            {
+                <tr @if (version.Equals(Model.Version))
+                {
+                    <text>class="table-info"</text>
+                } else if (version.Equals(Model.StorageMap.HeadVersion))
+                {
+                    <text>class="table-primary"</text>                    
+                }
+                >
+                    <td><a href="/ocfl/@(ViewBag.Path)?version=@version.OcflVersion">@version.OcflVersion</a></td>
+                    <td><a href="/ocfl/@(ViewBag.Path)?version=@version.OcflVersion">@version.MementoTimestamp</a></td>
+                    <td><a href="/ocfl/@(ViewBag.Path)?version=@version.OcflVersion">@StringUtils.GetLocalDate(version.MementoDateTime)</a></td>
+                        <td>
+                        @if (version.Equals(Model.StorageMap.Version))
+                        {
+                            <text><strong>Currently viewing</strong></text>
+                        }
+                        @if (version.Equals(Model.StorageMap.HeadVersion))
+                        {
+                            <text> Latest (head) version</text>
+                        }
+                     </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p>
+        <a class="btn btn-primary" href="/export/@(ViewBag.Path)?version=@Model.Version.OcflVersion">Export version @Model.Version.OcflVersion</a>
+        |
+        <a class="btn btn-primary" href="/import/@(ViewBag.Path)">Import a new version</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>File path</th>
+                <th>Hash</th>
+                <th>Versioned path</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var fileEntry in Model.StorageMap.Files.OrderBy(kvp => kvp.Key))
+            {
+                <tr>
+                    <td>@fileEntry.Key</td>
+                    <td><span title="@fileEntry.Value.Hash">@fileEntry.Value.Hash.Substring(0, 8)</span></td>
+                    <td>@fileEntry.Value.FullPath</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>

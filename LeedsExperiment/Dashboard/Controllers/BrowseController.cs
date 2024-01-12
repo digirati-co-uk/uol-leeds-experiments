@@ -1,8 +1,7 @@
 ﻿using Fedora.Abstractions;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Preservation;
-using System;
 using Utils;
 
 namespace Dashboard.Controllers;
@@ -22,11 +21,16 @@ public class BrowseController : Controller
 
     [Route("browse/{*path}")]
     public async Task<IActionResult> IndexAsync(string? path = null)
-    {        
+    {
+        ViewBag.Path = path;
         var resource = await preservation.GetResource(path);
         if (resource == null)
         {
             return NotFound();
+        }
+        if(resource.ObjectPath != path)
+        {
+            return Problem("ObjectPath != path");
         }
         if(resource.PreservationApiPartOf != null)
         {

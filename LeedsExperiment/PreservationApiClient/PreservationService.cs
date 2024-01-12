@@ -1,5 +1,6 @@
 ﻿using Fedora.Abstractions;
 using Preservation;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace PreservationApiClient;
@@ -7,7 +8,9 @@ namespace PreservationApiClient;
 public class PreservationService : IPreservation
 {
     private readonly HttpClient _httpClient;
+    // This is horrible and wrong
     private const string repositoryPrefix = "api/repository/";
+    private const string agPrefix = "api/archivalGroup/";
 
     public PreservationService(HttpClient httpClient)
     {
@@ -50,5 +53,17 @@ public class PreservationService : IPreservation
             }
         }
         return null;
+    }
+
+    public async Task<ArchivalGroup?> GetArchivalGroup(string path, string? version)
+    {
+        var apiPath = $"{agPrefix}{path.TrimStart('/')}";
+        if(!string.IsNullOrWhiteSpace(version))
+        {
+            apiPath += "?version=" + version;
+        }
+        var agApi = new Uri(apiPath, UriKind.Relative);
+        var ag = await _httpClient.GetFromJsonAsync<ArchivalGroup>(agApi);
+        return ag;
     }
 }

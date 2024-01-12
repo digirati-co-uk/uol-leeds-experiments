@@ -25,4 +25,30 @@ public class ObjectVersion
         return $"{OcflVersion} | {MementoTimestamp}";
     }
 
+    public override bool Equals(object? obj)
+    {
+        var other = obj as ObjectVersion;
+        if (other == null)
+        {
+            return false;
+        }
+        if(!(string.IsNullOrWhiteSpace(other.OcflVersion) || string.IsNullOrWhiteSpace(OcflVersion)))
+        {
+            return other.OcflVersion == OcflVersion;
+        }
+        if (!(string.IsNullOrWhiteSpace(other.MementoTimestamp) || string.IsNullOrWhiteSpace(MementoTimestamp)))
+        {
+            return other.MementoTimestamp == MementoTimestamp;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        if(OcflVersion == null)
+        {
+            throw new InvalidOperationException("Can't call GetHashCode until OcflVersion is set");
+        }
+        return OcflVersion.GetHashCode();
+    }
 }

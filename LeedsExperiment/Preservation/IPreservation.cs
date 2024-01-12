@@ -1,5 +1,4 @@
-﻿using Fedora;
-using Fedora.Abstractions;
+﻿using Fedora.Abstractions;
 
 namespace Preservation;
 
@@ -7,4 +6,5 @@ public interface IPreservation
 {
     Task<Resource?> GetResource(string? path);
     string GetInternalPath(Uri preservationApiUri);
+    Task<ArchivalGroup?> GetArchivalGroup(string path, string? version);
 }

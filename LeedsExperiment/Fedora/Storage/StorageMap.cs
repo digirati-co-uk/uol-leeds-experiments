@@ -35,6 +35,11 @@ public class StorageMap
     [JsonPropertyOrder(6)]
     public Dictionary<string, string> Hashes { get; set; }
 
+    // v1, v2
+    [JsonPropertyName("headVersion")]
+    [JsonPropertyOrder(7)]
+    public required ObjectVersion HeadVersion { get; set; }
+
     [JsonPropertyName("allVersions")]
     [JsonPropertyOrder(8)]
     public required ObjectVersion[] AllVersions { get; set; }

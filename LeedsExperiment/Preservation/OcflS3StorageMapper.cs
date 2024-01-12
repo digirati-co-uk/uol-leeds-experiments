@@ -54,6 +54,7 @@ public class OcflS3StorageMapper : IStorageMapper
 
         // Allow the supplied string to be either ocfl vX or memento timestamp (they cannot overlap!)
         ObjectVersion objectVersion = inventoryVersions.Single(v => v.OcflVersion == version || v.MementoTimestamp == version);
+        ObjectVersion headObjectVersion = inventoryVersions.Single(v => v.OcflVersion == inventory.Head);
 
         var mapFiles = new Dictionary<string, OriginFile>();
         var hashes = new Dictionary<string, string>();
@@ -111,6 +112,7 @@ public class OcflS3StorageMapper : IStorageMapper
             {
                 ArchivalGroup = archivalGroupUri,
                 Version = objectVersion,
+                HeadVersion = headObjectVersion,
                 StorageType = "S3",
                 Root = fedoraAws.Bucket,
                 ObjectPath = agOrigin!,
