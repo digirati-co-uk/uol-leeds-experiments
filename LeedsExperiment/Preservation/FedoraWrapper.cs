@@ -604,7 +604,7 @@ public class FedoraWrapper : IFedora
 
     private static void PopulateOrigin(StorageMap storageMap, Binary binary)
     {
-        if (storageMap.StorageType == "S3")
+        if (storageMap.StorageType == StorageTypes.S3)
         {
             // This "s3-ness" needs to be inside an abstracted impl
             binary.Origin = $"s3://{storageMap.Root}/{storageMap.ObjectPath}/{storageMap.Hashes[binary.Digest!]}";

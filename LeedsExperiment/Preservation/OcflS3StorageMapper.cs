@@ -113,7 +113,7 @@ public class OcflS3StorageMapper : IStorageMapper
                 ArchivalGroup = archivalGroupUri,
                 Version = objectVersion,
                 HeadVersion = headObjectVersion,
-                StorageType = "S3",
+                StorageType = StorageTypes.S3,
                 Root = fedoraAws.Bucket,
                 ObjectPath = agOrigin!,
                 AllVersions = inventoryVersions.ToArray(),
