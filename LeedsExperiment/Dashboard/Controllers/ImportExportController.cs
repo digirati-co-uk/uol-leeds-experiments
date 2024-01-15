@@ -23,6 +23,7 @@ namespace Dashboard.Controllers
             [FromRoute] string path,
             [FromQuery] string? version = null)
         {
+            throw new NotImplementedException();
             // display a list of what's going to be exported
             // add a default destination in the staging bucket
             // allow a different destination to be specified (bucket, key root)
@@ -43,6 +44,7 @@ namespace Dashboard.Controllers
             [FromRoute] string path,
             [FromQuery] string? version = null)
         {
+            throw new NotImplementedException();
             // work out what can be shared with a create new
             // (is it just this with a null path?)
 

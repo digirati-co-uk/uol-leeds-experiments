@@ -1,5 +1,6 @@
 using Fedora;
 using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 
 namespace SamplesWorker
 {
@@ -104,11 +105,13 @@ namespace SamplesWorker
 
             // POST the basic container foo
             var fooDir = new DirectoryInfo(Path.Combine(localPath, "foo"));
-            var fooContainer = await fedora.CreateContainer(archivalGroup.Location, fooDir.Name, fooDir.Name, transaction);
+            var cd = new ContainerDirectory { Name = fooDir.Name, Slug = fooDir.Name };
+            var fooContainer = await fedora.CreateContainer(archivalGroup.Location, cd, transaction);
 
             // POST into foo the binary bar.xml
             var localBarXml = new FileInfo(Path.Combine(localPath, "foo", "bar.xml"));
-            var xmlLocation = archivalGroup.GetResourceUri("foo/bar.xml");
+            var xmlLocation = archivalGroup.GetResourceUri("foo/bar.xml");  // Path is used here, which we could just supply as-is to BinaryFile... BUT needs archivalGroup to resolve, do we pass in the ArchivalGroup Uri as well? Maybe yes, you're supplying a file in the context of an archival group.
+                                                                            // A factory on ArchivalGroup? But then how do you make a new AG in one v1 transaction?
             var fedoraBarXml = await fedora.PutBinary(xmlLocation, localBarXml, localBarXml.Name, "text/xml", transaction);
 
             await fedora.CommitTransaction(transaction);

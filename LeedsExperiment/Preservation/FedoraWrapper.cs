@@ -1,5 +1,6 @@
 ﻿using Fedora;
 using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Fedora.ApiModel;
 using Fedora.Storage;
 using Fedora.Vocab;
@@ -10,6 +11,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace Preservation;
 
@@ -97,15 +99,14 @@ public class FedoraWrapper : IFedora
         var parent = GetUri(parentPath);
         return await CreateContainerInternal(true, parent, slug, name, transaction) as ArchivalGroup;
     }
-    public async Task<Container?> CreateContainer(Uri parent, string slug, string name, Transaction? transaction = null)
-    {
-        return await CreateContainerInternal(false, parent, slug, name, transaction);
-    }
 
-    public async Task<Container?> CreateContainer(string parentPath, string slug, string name, Transaction? transaction = null)
+    public async Task<Container?> CreateContainer(Uri parent, ContainerDirectory containerDirectory, Transaction? transaction = null)
     {
-        var parent = GetUri(parentPath);
-        return await CreateContainerInternal(false, parent, slug, name, transaction);
+        if(containerDirectory.Slug == null)
+        {
+            throw new ArgumentNullException(nameof(containerDirectory.Slug));
+        }
+        return await CreateContainerInternal(false, parent, containerDirectory.Slug, containerDirectory.Name, transaction);
     }
 
     private async Task<Container?> CreateContainerInternal(bool isArchivalGroup, Uri parent, string slug, string name, Transaction? transaction = null)

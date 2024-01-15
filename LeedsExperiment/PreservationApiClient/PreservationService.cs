@@ -66,4 +66,19 @@ public class PreservationService : IPreservation
         var ag = await _httpClient.GetFromJsonAsync<ArchivalGroup>(agApi);
         return ag;
     }
+
+    public Task<ExportResult> Export(string path, string? version)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ImportJob> GetUpdateJob(string path, string source)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ImportJob> Import(ImportJob importJob)
+    {
+        throw new NotImplementedException();
+    }
 }

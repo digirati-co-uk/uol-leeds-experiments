@@ -5,10 +5,27 @@ public class ContainerDirectory
     /// <summary>
     /// The repository path (not a full Uri), will end with Slug
     /// Only contains permitted characters (e.g., no spaces)
+    /// 
+    /// This is not required if you supply Slug and a parent
     /// </summary>
-    public required string Path { get; set; }
+    public string? Path { get; set; }
 
-    public string Slug => Path.Split('/')[^1];
+    private string? slug;
+    public string? Slug
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(Path))
+            {
+                return slug;
+            }
+            return Path.Split('/')[^1];
+        }
+        set
+        {
+            slug = value;
+        }
+    }
 
     /// <summary>
     /// The name of the resource in Fedora (dc:title)

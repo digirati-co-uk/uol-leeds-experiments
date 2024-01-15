@@ -30,7 +30,14 @@ public class BrowseController : Controller
         }
         if(resource.ObjectPath != path)
         {
-            return Problem("ObjectPath != path");
+            if((resource.ObjectPath ?? string.Empty) == string.Empty && (path ?? string.Empty) == string.Empty)
+            {
+                // not a problem but rationalise this!
+            }  
+            else
+            {
+                return Problem("ObjectPath != path");
+            }
         }
         if(resource.PreservationApiPartOf != null)
         {

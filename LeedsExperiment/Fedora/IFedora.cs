@@ -1,4 +1,5 @@
 ﻿using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Fedora.ApiModel;
 
 namespace Fedora
@@ -20,8 +21,8 @@ namespace Fedora
 
         Task<ArchivalGroup?> CreateArchivalGroup(Uri parent, string slug, string name, Transaction? transaction = null);
         Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name, Transaction? transaction = null);
-        Task<Container?> CreateContainer(Uri parent, string slug, string name, Transaction? transaction = null);
-        Task<Container?> CreateContainer(string parentPath, string slug, string name, Transaction? transaction = null);
+
+        Task<Container?> CreateContainer(Uri parent, ContainerDirectory containerDirectory, Transaction? transaction = null);
 
         /// <summary>
         /// DISALLOW a POST for binaries, for now
