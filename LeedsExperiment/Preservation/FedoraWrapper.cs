@@ -1,4 +1,7 @@
-﻿using Fedora;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Util;
+using Fedora;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.ApiModel;
@@ -11,7 +14,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Preservation;
 
@@ -24,12 +26,14 @@ public class FedoraWrapper : IFedora
     private readonly IMemoryCache cache;
     private readonly int fedoraRootSegmentsLength;
     private readonly int baseAddressLength;
+    private IAmazonS3? s3Client; // required for reading binary sources, not for reading fedora. Kinda... supports S3 just as it does FileInfo.
 
     public FedoraWrapper(
         HttpClient httpClient,
         IStorageMapper storageMapper,
         IOptions<PreservationApiOptions> preservationApiOptions,
-        IMemoryCache memoryCache)
+        IMemoryCache memoryCache,
+        IAmazonS3 s3Client)
     {
         this.httpClient = httpClient;
         this.storageMapper = storageMapper;
@@ -38,6 +42,7 @@ public class FedoraWrapper : IFedora
         fedoraRootSegmentsLength = httpClient.BaseAddress!.Segments.Length;
         baseAddressLength = httpClient.BaseAddress!.ToString().Length;
         cache = memoryCache;
+        this.s3Client = s3Client;
     }
 
 
@@ -196,26 +201,69 @@ public class FedoraWrapper : IFedora
         // The binary resource does not have a dc:title property yet
     }
 
-    // Deprecated, but leave the PutOrPost logic for reference
-    public async Task<Binary> AddBinary(Uri parent, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
+    public async Task<Binary> PutBinary(Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null)
     {
-        return await PutOrPostBinary(HttpMethod.Post, parent, localFile, originalName, contentType, transaction, checksum);
+        return await PutOrPostBinary(HttpMethod.Put, archivalGroupUri, binaryFile, transaction);
     }
 
-    public async Task<Binary> PutBinary(Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
+    private async void EnsureChecksum(BinaryFile binaryFile)
     {
-        return await PutOrPostBinary(HttpMethod.Put, location, localFile, originalName, contentType, transaction, checksum);
-    }
+        string? expected = null;
+        
+        switch(binaryFile.StorageType)
+        {
+            case StorageTypes.FileSystem:
+                var fi = new FileInfo(binaryFile.ExternalLocation);
+                expected = Checksum.Sha512FromFile(fi);
+                break;
+            case StorageTypes.S3:
+                // TODO - get the SHA256 algorithm from AWS directly rather than compute it here
+                // GetObjectAttributesAsync
+                // Need to switch Fedora and OCFL to SHA256
+                // What does it mean if you switch the default algorithm in Fedora? It's used for OCFL...
 
-    private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction = null, string? checksum = null)
-    {
-        // verify that parent is a container first?
-        var expected = Checksum.Sha512FromFile(localFile);
-        if (checksum != null && checksum != expected)
+                var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
+
+                // This would be an efficient way of doing this - but with this naive implementation
+                // we're going to read the object twice
+                var s3Stream = await s3Client!.GetObjectStreamAsync(s3Uri.Bucket, s3Uri.Key, null);
+                expected = Checksum.Sha512FromStream(s3Stream);
+                // could get a byte array here and then pass it along eventually to MakeBinaryPutOrPost
+                // for now just read it twice.
+                // Later we'll get the sha256 checksum from metadata
+                break;
+            default:
+                throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
+        }
+
+        if (binaryFile.Digest != null && binaryFile.Digest != expected)
         {
             throw new InvalidOperationException("Initial checksum doesn't match");
         }
-        var req = MakeBinaryPutOrPost(httpMethod, location, localFile, originalName, contentType, transaction, expected);
+        binaryFile.Digest = expected;
+    }
+
+    private Uri GetFedoraUriWithinArchivalGroup(Uri archivalGroupUri, string path)
+    {
+        // the Location property won't end with a trailing slash, so we can't create URIs with the normal Uri constructor
+        // we can't do:
+        // new Uri(Location, "foo/bar.xml");
+        // and nor can we use "./foo/bar.xml" or "/foo/bar.xml" 
+        if (archivalGroupUri.AbsolutePath.EndsWith("/"))
+        {
+            // I'm pretty sure this will never be the case
+            return new Uri(archivalGroupUri, path);
+        }
+        return new Uri($"{archivalGroupUri}/{path}");
+    }
+
+    private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null)
+    {
+        // FileInfo localFile, string originalName, string contentType, .. , string? checksum = null
+        // verify that parent is a container first?
+        EnsureChecksum(binaryFile);
+        var fedoraLocation = GetFedoraUriWithinArchivalGroup(archivalGroupUri, binaryFile.Path);
+        var req = await MakeBinaryPutOrPost(httpMethod, fedoraLocation, binaryFile, transaction);
         var response = await httpClient.SendAsync(req);
         if (httpMethod == HttpMethod.Put && response.StatusCode == HttpStatusCode.Gone)
         {
@@ -225,13 +273,13 @@ public class FedoraWrapper : IFedora
             // But we want to reinstate a binary.
 
             // Log or record somehow that this has happened?
-            var retryReq = MakeBinaryPutOrPost(httpMethod, location, localFile, originalName, contentType, transaction, expected)
+            var retryReq = (await MakeBinaryPutOrPost(httpMethod, fedoraLocation, binaryFile, transaction))
                 .OverwriteTombstone();
             response = await httpClient.SendAsync(retryReq);
         }
         response.EnsureSuccessStatusCode();
 
-        var resourceLocation = httpMethod == HttpMethod.Post ? response.Headers.Location! : location;
+        var resourceLocation = httpMethod == HttpMethod.Post ? response.Headers.Location! : fedoraLocation;
         var newReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Get)
             .InTransaction(transaction)
             .ForJsonLd();
@@ -243,7 +291,7 @@ public class FedoraWrapper : IFedora
             // The binary resource does not have a dc:title property yet
             var patchReq = MakeHttpRequestMessage(resourceLocation.MetadataUri(), HttpMethod.Patch)
                 .InTransaction(transaction);
-            patchReq.AsInsertTitlePatch(originalName);
+            patchReq.AsInsertTitlePatch(binaryFile.Name);
             var patchResponse = await httpClient.SendAsync(patchReq);
             patchResponse.EnsureSuccessStatusCode();
             // now ask again:
@@ -254,7 +302,7 @@ public class FedoraWrapper : IFedora
             binaryResponse = await MakeFedoraResponse<BinaryMetadataResponse>(afterPatchResponse);
         }
         Binary binary = MakeBinary(binaryResponse!);
-        if (binary.Digest != expected)
+        if (binary.Digest != binaryFile.Digest)
         {
             throw new InvalidOperationException("Fedora checksum doesn't match");
         }
@@ -262,27 +310,40 @@ public class FedoraWrapper : IFedora
     }
 
 
-    private HttpRequestMessage MakeBinaryPutOrPost(HttpMethod httpMethod, Uri location, FileInfo localFile, string originalName, string contentType, Transaction? transaction, string? expected)
+    private async Task<HttpRequestMessage> MakeBinaryPutOrPost(HttpMethod httpMethod, Uri location, BinaryFile binaryFile, Transaction? transaction)
     {
         var req = MakeHttpRequestMessage(location, httpMethod)
             .InTransaction(transaction)
-            .WithDigest(expected, "sha-512"); // move algorithm choice to config
+            .WithDigest(binaryFile.Digest, "sha-512"); // move algorithm choice to config
         if (httpMethod == HttpMethod.Post)
         {
-            req.WithSlug(localFile.Name);
+            req.WithSlug(binaryFile.Slug);
         }
+
 
         // Need something better than this for large files.
         // How would we transfer a 10GB file for example?
-        req.Content = new ByteArrayContent(File.ReadAllBytes(localFile.FullName))
-            .WithContentType(contentType);
-
-        // see if this survives the PUT (i.e., do we need to re-state it?)
-        // No, always do this
-        //if (httpMethod == HttpMethod.Post)
-        //{ 
-        req.Content.WithContentDisposition(originalName);
-        //}
+        // Also this is grossly inefficient, we've already read the stream to look at the checksum.
+        // We should keep the byte array... but then what if it's huge?
+        switch (binaryFile.StorageType)
+        {
+            case StorageTypes.FileSystem:
+                req.Content = new ByteArrayContent(File.ReadAllBytes(binaryFile.ExternalLocation))
+                    .WithContentType(binaryFile.ContentType);
+                break;
+            case StorageTypes.S3:
+                var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
+                var s3Req = new GetObjectRequest() { BucketName = s3Uri.Bucket, Key = s3Uri.Key };
+                var ms = new MemoryStream();
+                var s3Resp = await s3Client!.GetObjectAsync(s3Req); 
+                await s3Resp.ResponseStream.CopyToAsync(ms); 
+                req.Content = new ByteArrayContent(ms.ToArray())
+                   .WithContentType(binaryFile.ContentType);
+                break;
+            default:
+                throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
+        }
+        req.Content.WithContentDisposition(binaryFile.FileName);
         return req;
     }
 

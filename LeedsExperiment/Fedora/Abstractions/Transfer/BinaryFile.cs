@@ -15,7 +15,7 @@ public class BinaryFile
     /// <summary>
     /// An S3 key, a filesystem path - somewhere accessible to the Preservation API, to import from or export to
     /// </summary>        
-    public required string Location { get; set; }
+    public required string ExternalLocation { get; set; }
 
     public required string StorageType { get; set; }
 

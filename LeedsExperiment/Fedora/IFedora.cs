@@ -35,7 +35,8 @@ namespace Fedora
         /// <param name="checksum">An initial checksum, e.g., calculated in browser on upload. This method will still calculate a checksum and compare with what it gets back from Fedora.</param>
         /// <returns></returns>
         // Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
-        Task<Binary> PutBinary(Uri location, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
+        // Task<Binary> PutBinary(Uri location, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
+        Task<Binary> PutBinary(Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null);
 
         // Transactions
         Task<Transaction> BeginTransaction();

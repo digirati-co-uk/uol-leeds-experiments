@@ -1,6 +1,5 @@
 ﻿using Fedora;
 using Fedora.Storage.Ocfl;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Preservation.API.Controllers
