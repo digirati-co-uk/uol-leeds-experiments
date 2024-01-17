@@ -1,0 +1,13 @@
+﻿@using Dashboard.Helpers
+@using Utils
+@model Dashboard.Models.ImportStartModel
+
+
+<div>
+    <h1 class="display-4">Import 📦 - @Model.DisplayName</h1>
+
+
+    <form method="post" action="/import/@(ViewBag.Path)?version=@Model.Version.OcflVersion">
+
+    </form>
+</div>
