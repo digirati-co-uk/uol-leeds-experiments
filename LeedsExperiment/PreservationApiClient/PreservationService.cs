@@ -8,9 +8,12 @@ namespace PreservationApiClient;
 public class PreservationService : IPreservation
 {
     private readonly HttpClient _httpClient;
+
     // This is horrible and wrong
     private const string repositoryPrefix = "api/repository/";
     private const string agPrefix = "api/archivalGroup/";
+    private const string exportPrefix = "api/export/";
+    private const string importPrefix = "api/import/";
 
     public PreservationService(HttpClient httpClient)
     {
@@ -67,18 +70,48 @@ public class PreservationService : IPreservation
         return ag;
     }
 
-    public Task<ExportResult> Export(string path, string? version)
+    public async Task<ExportResult> Export(string path, string? version)
     {
-        throw new NotImplementedException();
+        var apiPath = $"{exportPrefix}{path.TrimStart('/')}";
+        if (!string.IsNullOrWhiteSpace(version))
+        {
+            apiPath += "?version=" + version;
+        }
+        var exportApi = new Uri(apiPath, UriKind.Relative);
+        var exportResponse = await _httpClient.PostAsync(exportApi, null); // POST but no request body
+        exportResponse.EnsureSuccessStatusCode();
+        var export = await exportResponse.Content.ReadFromJsonAsync<ExportResult>();
+
+        // What's the best way to deal with problems here?
+        if (export != null)
+        {
+            return export;
+        }
+        throw new InvalidOperationException("Could not get an export object back");        
     }
 
-    public Task<ImportJob> GetUpdateJob(string path, string source)
+    public async Task<ImportJob> GetUpdateJob(string path, string source)
     {
-        throw new NotImplementedException();
+        var apiPath = $"{importPrefix}{path.TrimStart('/')}?source={source}";
+        var importApi = new Uri(apiPath, UriKind.Relative);
+        var importJob = await _httpClient.GetFromJsonAsync<ImportJob>(importApi);
+        // What's the best way to deal with problems here?
+        if (importJob != null)
+        {
+            return importJob;
+        }
+        throw new InvalidOperationException("Could not get an import object back");
     }
 
-    public Task<ImportJob> Import(ImportJob importJob)
+    public async Task<ImportJob> Import(ImportJob importJob)
     {
-        throw new NotImplementedException();
+        var apiPath = $"{importPrefix}__import";
+        var response = await _httpClient.PostAsJsonAsync(new Uri(apiPath, UriKind.Relative), importJob);
+        var processedImportJob = await response.Content.ReadFromJsonAsync<ImportJob>();
+        if (processedImportJob != null)
+        {
+            return processedImportJob;
+        }
+        throw new InvalidOperationException("Could not get a processed import object back");
     }
 }

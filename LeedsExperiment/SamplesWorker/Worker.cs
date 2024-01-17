@@ -85,16 +85,17 @@ namespace SamplesWorker
         /// This is just a helper method for this test to use the local file system.
         /// Our path (slug), filename (content-disposition) and name (the dc:title) are all the same, just the file name.
         /// </summary>
-        /// <param name="localPath"></param>
+        /// <param name="localRootPath"></param>
         /// <param name="pathWithinArchivalGroup"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        private BinaryFile MakeBinaryFileFromFileSystem(string localPath, string pathWithinArchivalGroup, string contentType)
+        private BinaryFile MakeBinaryFileFromFileSystem(string localRootPath, Uri fedoraParent, string pathWithinArchivalGroup, string contentType)
         {
             // This still seems a bit awkward to construct - paths
-            var localFileInfo = new FileInfo(Path.Combine(localPath, pathWithinArchivalGroup.Replace('/', Path.PathSeparator)));
+            var localFileInfo = new FileInfo(Path.Combine(localRootPath, pathWithinArchivalGroup.Replace('/', Path.DirectorySeparatorChar)));
             return new BinaryFile
             {
+                Parent = fedoraParent,
                 ExternalLocation = localFileInfo.FullName,
                 Path = pathWithinArchivalGroup,
                 ContentType = contentType,
@@ -117,21 +118,21 @@ namespace SamplesWorker
             var archivalGroup = await fedora.CreateArchivalGroup(storageContainer.Location, $"ocfl-expt-{Now()}", "ocflv1", transaction);
 
             // PUT the binary image.tiff
-            var binaryFileTiff = MakeBinaryFileFromFileSystem(localPath, "image.tiff", "image/tiff");            
-            var fedoraImageTiff = await fedora.PutBinary(archivalGroup.Location, binaryFileTiff, transaction);
+            var binaryFileTiff = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "image.tiff", "image/tiff");            
+            var fedoraImageTiff = await fedora.PutBinary(binaryFileTiff, transaction);
 
             // POST the binary empty.text
-            var binaryEmptyTxt = MakeBinaryFileFromFileSystem(localPath, "empty.txt", "text/plain");
-            var fedoraEmptyTxt = await fedora.PutBinary(archivalGroup.Location, binaryEmptyTxt, transaction);
+            var binaryEmptyTxt = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "empty.txt", "text/plain");
+            var fedoraEmptyTxt = await fedora.PutBinary(binaryEmptyTxt, transaction);
 
             // POST the basic container foo
             var fooDir = new DirectoryInfo(Path.Combine(localPath, "foo"));
-            var cd = new ContainerDirectory { Name = fooDir.Name, Slug = fooDir.Name };
-            var fooContainer = await fedora.CreateContainer(archivalGroup.Location, cd, transaction);
+            var cd = new ContainerDirectory { Parent=archivalGroup.Location, Name = fooDir.Name, Path = fooDir.Name };
+            var fooContainer = await fedora.CreateContainer(cd, transaction);
 
             // POST into foo the binary bar.xml
-            var binaryBarXml = MakeBinaryFileFromFileSystem(localPath, "foo/bar.xml", "text/xml");
-            var fedoraBarXml = await fedora.PutBinary(archivalGroup.Location, binaryBarXml, transaction);
+            var binaryBarXml = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "foo/bar.xml", "text/xml");
+            var fedoraBarXml = await fedora.PutBinary(binaryBarXml, transaction);
 
             await fedora.CommitTransaction(transaction);
 
@@ -148,12 +149,12 @@ namespace SamplesWorker
             Console.WriteLine("In transaction for v2 {0}", transaction.Location);
 
             // change content of foo/bar.xml
-            var binaryBarXml = MakeBinaryFileFromFileSystem(localPath, "foo/bar.xml", "text/xml");
-            var fedoraBarXml = await fedora.PutBinary(archivalGroup.Location, binaryBarXml, transaction);
+            var binaryBarXml = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "foo/bar.xml", "text/xml");
+            var fedoraBarXml = await fedora.PutBinary(binaryBarXml, transaction);
 
             // add empty2.txt
-            var binaryEmptyTxt = MakeBinaryFileFromFileSystem(localPath, "empty2.txt", "text/plain");
-            var fedoraEmptyTxt = await fedora.PutBinary(archivalGroup.Location, binaryEmptyTxt, transaction);
+            var binaryEmptyTxt = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "empty2.txt", "text/plain");
+            var fedoraEmptyTxt = await fedora.PutBinary(binaryEmptyTxt, transaction);
 
             // remove image.tiff
             await fedora.Delete(archivalGroup.GetResourceUri("image.tiff"), transaction);
@@ -177,8 +178,8 @@ namespace SamplesWorker
 
             // restore image.tiff
             // so should this be a POST or a PUT?
-            var binaryFileTiff = MakeBinaryFileFromFileSystem(localPath, "image.tiff", "image/tiff");
-            var fedoraImageTiff = await fedora.PutBinary(archivalGroup.Location, binaryFileTiff, transaction);
+            var binaryFileTiff = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "image.tiff", "image/tiff");
+            var fedoraImageTiff = await fedora.PutBinary(binaryFileTiff, transaction);
 
             // end transaction
             await fedora.CommitTransaction(transaction);
@@ -197,8 +198,8 @@ namespace SamplesWorker
             Console.WriteLine("In transaction for v3Alt {0}", transaction.Location);
 
             // Add another image
-            var binaryFileJpg = MakeBinaryFileFromFileSystem(localPath, "picture.jpg", "image/jpeg");
-            var fedoraImageJpg = await fedora.PutBinary(archivalGroup.Location, binaryFileJpg, transaction);
+            var binaryFileJpg = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "picture.jpg", "image/jpeg");
+            var fedoraImageJpg = await fedora.PutBinary(binaryFileJpg, transaction);
 
             // end transaction
             await fedora.CommitTransaction(transaction);
@@ -216,8 +217,8 @@ namespace SamplesWorker
             Console.WriteLine("In transaction for v4Alt {0}", transaction.Location);
 
             // CHANGE the image at the picture.jpg URI
-            var binaryFileJpg = MakeBinaryFileFromFileSystem(localPath, "picture.jpg", "image/jpeg");
-            var fedoraImageJpg = await fedora.PutBinary(archivalGroup.Location, binaryFileJpg, transaction);
+            var binaryFileJpg = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "picture.jpg", "image/jpeg");
+            var fedoraImageJpg = await fedora.PutBinary(binaryFileJpg, transaction);
 
             // end transaction
             await fedora.CommitTransaction(transaction);

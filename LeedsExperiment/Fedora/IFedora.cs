@@ -22,7 +22,7 @@ namespace Fedora
         Task<ArchivalGroup?> CreateArchivalGroup(Uri parent, string slug, string name, Transaction? transaction = null);
         Task<ArchivalGroup?> CreateArchivalGroup(string parentPath, string slug, string name, Transaction? transaction = null);
 
-        Task<Container?> CreateContainer(Uri parent, ContainerDirectory containerDirectory, Transaction? transaction = null);
+        Task<Container?> CreateContainer(ContainerDirectory containerDirectory, Transaction? transaction = null);
 
         /// <summary>
         /// DISALLOW a POST for binaries, for now
@@ -36,7 +36,7 @@ namespace Fedora
         /// <returns></returns>
         // Task<Binary> AddBinary(Uri parent, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
         // Task<Binary> PutBinary(Uri location, FileInfo localFileInfo, string originalName, string contentType, Transaction? transaction = null, string? checksum = null);
-        Task<Binary> PutBinary(Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null);
+        Task<Binary> PutBinary(BinaryFile binaryFile, Transaction? transaction = null);
 
         // Transactions
         Task<Transaction> BeginTransaction();

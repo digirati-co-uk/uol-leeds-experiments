@@ -1,0 +1,61 @@
+﻿@using Dashboard.Helpers
+@using Utils
+@model Fedora.Abstractions.ArchivalGroup
+
+<div>
+    <h1 class="display-4">Export 📦 - @Model.GetDisplayName()</h1>        
+    <p>
+        Version: <strong>@Model.Version!.OcflVersion</strong> -
+        @if (Model.Version.Equals(Model.StorageMap!.HeadVersion))
+        {
+            <em>This is the current (head) version.</em>
+        }
+        else
+        {
+            <em>This is a <strong>previous</strong> version.</em>
+        }        
+    </p>
+    <p><a href="/ocfl/@ViewBag.Path">View storage (OCFL)</a></p>
+
+    <hr/>
+
+    <p>The following files will be exported to a location in a staging bucket for you to pick up.</p>
+
+
+    <div class="alert alert-secondary" role="alert">
+        <small class="text-muted">(Later you will have more control about where you can have the Preservation API export content to)</small>
+    </div>
+
+    <form method="post" action="/export/@(ViewBag.Path)?version=@Model.Version.OcflVersion">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <input class="btn btn-primary form-control" type="submit" value="Export">
+            </div>
+            <div class="col-auto">
+                <span class="form-text">
+                    Click here to export the following files:
+                </span>
+            </div>
+        </div>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>File path</th>
+                <th>Hash</th>
+                <th>Versioned path</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fileEntry in Model.StorageMap.Files.OrderBy(kvp => kvp.Key))
+            {
+                <tr>
+                    <td>@fileEntry.Key</td>
+                    <td><span title="@fileEntry.Value.Hash">@fileEntry.Value.Hash.Substring(0, 8)</span></td>
+                    <td>@fileEntry.Value.FullPath</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

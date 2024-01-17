@@ -1,0 +1,50 @@
+﻿@using Dashboard.Borrowed
+@using Dashboard.Helpers
+@using Utils
+@model Preservation.ExportResult
+
+<div>
+    <h1 class="display-4">Export Result 📦</h1>
+
+    @if (!string.IsNullOrEmpty(Model.Problem))
+    {
+        <div class="alert alert-danger" role="alert">
+            @Model.Problem
+        </div>
+    } else
+    {
+        <table class="table">
+            <tbody>
+                <tr>
+                    <th scope="row">Archival Group</th>
+                    <td><a href="/ocfl/@Model.ArchivalGroupPath">@Model.ArchivalGroupPath</a></td>
+                </tr>
+                <tr>
+                    <th scope="row">Destination (@Model.StorageType)</th>
+                    <td><a href="@S3Util.GetAwsConsoleUri(Model.Destination)">@Model.Destination</a></td>
+                </tr>
+                <tr>
+                    <th scope="row">Version</th>
+                    <td>@Model.Version</td>
+                </tr>
+                <tr>
+                    <th scope="row">Time taken</th>
+                    <td>@((Model.End - Model.Start).TotalMilliseconds) ms</td>
+                </tr>
+                <tr>
+                    <th scope="row">Files</th>
+                    <td>
+                        <ul class="list-unstyled">                            
+                            @foreach(var file in Model.Files)
+                            {
+                                <li><a href="@S3Util.GetAwsConsoleUri(file)">@file.RemoveStart($"{Model.Destination}/")</a></li>                                
+                            }
+                        </ul>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+</div>
+

@@ -105,13 +105,13 @@ public class FedoraWrapper : IFedora
         return await CreateContainerInternal(true, parent, slug, name, transaction) as ArchivalGroup;
     }
 
-    public async Task<Container?> CreateContainer(Uri parent, ContainerDirectory containerDirectory, Transaction? transaction = null)
+    public async Task<Container?> CreateContainer(ContainerDirectory containerDirectory, Transaction? transaction = null)
     {
         if(containerDirectory.Slug == null)
         {
             throw new ArgumentNullException(nameof(containerDirectory.Slug));
         }
-        return await CreateContainerInternal(false, parent, containerDirectory.Slug, containerDirectory.Name, transaction);
+        return await CreateContainerInternal(false, containerDirectory.Parent, containerDirectory.Slug, containerDirectory.Name, transaction);
     }
 
     private async Task<Container?> CreateContainerInternal(bool isArchivalGroup, Uri parent, string slug, string name, Transaction? transaction = null)
@@ -201,9 +201,9 @@ public class FedoraWrapper : IFedora
         // The binary resource does not have a dc:title property yet
     }
 
-    public async Task<Binary> PutBinary(Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null)
+    public async Task<Binary> PutBinary(BinaryFile binaryFile, Transaction? transaction = null)
     {
-        return await PutOrPostBinary(HttpMethod.Put, archivalGroupUri, binaryFile, transaction);
+        return await PutOrPostBinary(HttpMethod.Put, binaryFile, transaction);
     }
 
     private async void EnsureChecksum(BinaryFile binaryFile)
@@ -257,12 +257,12 @@ public class FedoraWrapper : IFedora
         return new Uri($"{archivalGroupUri}/{path}");
     }
 
-    private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, Uri archivalGroupUri, BinaryFile binaryFile, Transaction? transaction = null)
+    private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, BinaryFile binaryFile, Transaction? transaction = null)
     {
         // FileInfo localFile, string originalName, string contentType, .. , string? checksum = null
         // verify that parent is a container first?
         EnsureChecksum(binaryFile);
-        var fedoraLocation = GetFedoraUriWithinArchivalGroup(archivalGroupUri, binaryFile.Path);
+        var fedoraLocation = GetFedoraUriWithinArchivalGroup(binaryFile.Parent, binaryFile.Path);
         var req = await MakeBinaryPutOrPost(httpMethod, fedoraLocation, binaryFile, transaction);
         var response = await httpClient.SendAsync(req);
         if (httpMethod == HttpMethod.Put && response.StatusCode == HttpStatusCode.Gone)

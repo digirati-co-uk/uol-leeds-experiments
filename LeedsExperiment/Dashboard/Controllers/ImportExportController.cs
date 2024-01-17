@@ -23,7 +23,17 @@ namespace Dashboard.Controllers
             [FromRoute] string path,
             [FromQuery] string? version = null)
         {
-            throw new NotImplementedException();
+            ViewBag.Path = path;
+            var ag = await preservation.GetArchivalGroup(path, version);
+            if (ag == null)
+            {
+                return NotFound();
+            }
+            if (ag.Type != "ArchivalGroup")
+            {
+                return BadRequest("Not an Archival Group");
+            }
+            return View("ExportStart", ag);
             // display a list of what's going to be exported
             // add a default destination in the staging bucket
             // allow a different destination to be specified (bucket, key root)
@@ -36,8 +46,21 @@ namespace Dashboard.Controllers
             // display summary completion, link back to ArchivalGroup Browse head
         }
 
+        [HttpPost]
+        [ActionName("ExportExecute")]
+        [Route("export/{*path}")]
+        public async Task<IActionResult> ExportExecuteAsync(
+            [FromRoute] string path,
+            [FromQuery] string? version = null)
+        {
+            var exportResult = await preservation.Export(path, version);
+            return View("ExportResult", exportResult);
 
-        [HttpGet]
+            // we could also supply the ag to the model for a richer display but at the expense of longer time
+        }
+
+
+            [HttpGet]
         [ActionName("ImportStart")]
         [Route("import/{*path}")]
         public async Task<IActionResult> ImportStartAsync(

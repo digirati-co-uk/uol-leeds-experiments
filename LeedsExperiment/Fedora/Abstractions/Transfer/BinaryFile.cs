@@ -4,30 +4,14 @@
 /// Used when importing new files into the repository from a source location (disk or S3)
 /// or exporting to a location
 /// </summary>
-public class BinaryFile
+public class BinaryFile : ResourceWithParentUri
 {
-    /// <summary>
-    /// The repository path (not a full Uri), will end with Slug
-    /// Only contains permitted characters (e.g., no spaces)
-    /// </summary>
-    public required string Path { get; set; }
-
     /// <summary>
     /// An S3 key, a filesystem path - somewhere accessible to the Preservation API, to import from or export to
     /// </summary>        
     public required string ExternalLocation { get; set; }
 
     public required string StorageType { get; set; }
-
-    /// <summary>
-    /// Only contains permitted characters (e.g., no spaces)
-    /// </summary>
-    public string Slug => Path.Split('/')[^1];
-
-    /// <summary>
-    /// The name of the resource in Fedora (dc:title)
-    /// </summary>
-    public required string Name { get; set; }
 
     /// <summary>
     ///  The Original / actual name of the file, rather than the path-safe, reduced character set slug
