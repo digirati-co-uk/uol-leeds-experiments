@@ -1,9 +1,10 @@
 ﻿using Dashboard.Helpers;
 using Fedora.Abstractions;
+using Preservation;
 
 namespace Dashboard.Models;
 
-public class ImportStartModel
+public class ImportModel
 {
     public string DisplayName 
     { 
@@ -18,4 +19,11 @@ public class ImportStartModel
     }
     public required string Path { get; set; }
     public ArchivalGroup? ArchivalGroup { get; set; }
+    public required ResourceInfo ResourceInfo { get; set; }
+    public ImportJob? ImportJob { get; set; }
+
+    /// <summary>
+    ///  The name to give a new ArchivalGroup on creation
+    /// </summary>
+    public string? NewName { get; internal set; }
 }

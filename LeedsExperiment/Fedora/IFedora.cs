@@ -9,7 +9,7 @@ namespace Fedora
         Uri GetUri(string path);
 
         Task<string> Proxy(string contentType, string path, string? jsonLdMode = null, bool preferContained = false, string? acceptDate = null, bool head = false);
-
+        Task<ResourceInfo> GetResourceInfo(Uri uri);
         Task<Resource?> GetObject(Uri uri, Transaction? transaction = null);
         Task<Resource?> GetObject(string path, Transaction? transaction = null);
 

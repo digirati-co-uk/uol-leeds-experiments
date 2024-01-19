@@ -35,6 +35,13 @@ public class ImportJob
     public Uri? ArchivalGroupUri { get; set; }
 
     /// <summary>
+    /// The Name of the ArchivalGroup (dc:title), when creating a new one
+    /// </summary>
+    [JsonPropertyName("archivalGroupName")]
+    [JsonPropertyOrder(5)]
+    public string? ArchivalGroupName { get; set; }
+
+    /// <summary>
     /// When the diff calculation began
     /// </summary>
     [JsonPropertyName("diffStart")]

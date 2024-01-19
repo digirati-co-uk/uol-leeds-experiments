@@ -70,6 +70,14 @@ public class PreservationService : IPreservation
         return ag;
     }
 
+    public async Task<ResourceInfo> GetResourceInfo(string path)
+    {
+        var apiPath = $"{repositoryPrefix}__info/{path.TrimStart('/')}";
+        var infoApi = new Uri(apiPath, UriKind.Relative);
+        var info = await _httpClient.GetFromJsonAsync<ResourceInfo>(infoApi);
+        return info!;
+    }
+
     public async Task<ExportResult> Export(string path, string? version)
     {
         var apiPath = $"{exportPrefix}{path.TrimStart('/')}";

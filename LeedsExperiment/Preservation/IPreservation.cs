@@ -10,6 +10,8 @@ public interface IPreservation
     string GetInternalPath(Uri preservationApiUri);
     Task<ArchivalGroup?> GetArchivalGroup(string path, string? version);
 
+    Task<ResourceInfo> GetResourceInfo(string path);
+
 
     // Interacting with a staging area
     // ===============================

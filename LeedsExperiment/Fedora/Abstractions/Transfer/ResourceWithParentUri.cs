@@ -26,4 +26,13 @@ public abstract class ResourceWithParentUri
     /// Only contains permitted characters (e.g., no spaces)
     /// </summary>
     public string Slug => Path.Split('/')[^1];
+
+    public string GetDisplayName()
+    {
+        if(Name == Slug)
+        {
+            return Name;
+        }
+        return $"{Name} (/{Slug})";
+    }
 }

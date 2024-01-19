@@ -1,0 +1,118 @@
+﻿@using Dashboard.Borrowed
+@using Dashboard.Helpers
+@using System.Text.Json
+@using Utils
+@model Dashboard.Models.ImportModel
+
+<div>
+    <h1 class="display-4">Import 📦 - @Model.DisplayName</h1>
+    <p>Path: @Model.Path</p>
+
+    <h2>Import Details</h2>
+
+    @if(Model.ArchivalGroup == null)
+    {
+        <p>This import will create a new Archival Group at @Model.Path with name <b>@Model.NewName</b></p>
+    }
+    else
+    {
+        <p>This import job will update the Archival Group <b>@Model.ArchivalGroup.Name</b>, currently at version @Model.ArchivalGroup.Version</p>
+    }
+
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th scope="row">Archival Group Path</th>
+                <td>@Model.Path</td>
+            </tr>
+            <tr>
+                <th scope="row">Source (@Model.ImportJob!.StorageType)</th>
+                <td>@Model.ImportJob.Source</td>
+            </tr>
+            <tr>
+                <th scope="row">Name</th>
+                <td>@(Model.ArchivalGroup?.Name ?? Model.NewName)</td>
+            </tr>
+            <tr>
+                <th scope="row">Diff duration</th>
+                <td>@((Model.ImportJob.DiffEnd - Model.ImportJob.DiffStart).TotalMilliseconds) ms</td>
+            </tr>
+            @if(Model.ArchivalGroup != null)
+            {
+                <tr>
+                    <th scope="row">Diff based on</th>
+                    <td>@Model.ImportJob.DiffVersion</td>
+                </tr>                
+            }
+            <tr>
+                <th scope="row">Containers to add</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var cd in Model.ImportJob.ContainersToAdd)
+                        {
+                            <li>@cd.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files to add</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesToAdd)
+                        {
+                            <li><a href="@S3Util.GetAwsConsoleUri(file.ExternalLocation)">@file.ExternalLocation</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files to Delete</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesToDelete)
+                        {
+                            <li>@file.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files to Patch</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesToPatch)
+                        {
+                            <li><a href="@S3Util.GetAwsConsoleUri(file.ExternalLocation)">@file.Path</a></li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Containers to delete</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var cd in Model.ImportJob.ContainersToDelete)
+                        {
+                            <li>@cd.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    }
+
+    <form method="post" action="/import/@(Model.Path)">
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+
+        <div class="mb-3">
+            <label for="importJob" class="form-label">Raw JSON of the importJob</label>
+            <textarea class="form-control" id="importJob" rows="3" name="importJobString">
+@JsonSerializer.Serialize(Model.ImportJob)
+</textarea>
+        </div>
+    </form>
+</div>

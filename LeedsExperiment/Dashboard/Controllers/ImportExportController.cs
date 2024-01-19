@@ -1,6 +1,8 @@
 ﻿using Dashboard.Models;
+using Fedora.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Preservation;
+using System.Text.Json;
 
 namespace Dashboard.Controllers
 {
@@ -65,45 +67,62 @@ namespace Dashboard.Controllers
         [Route("import/{*path}")]
         public async Task<IActionResult> ImportStartAsync(
             [FromRoute] string path,
-            [FromQuery] string? source = null)
-        {
-            
-            // remember the IsUpdate property on ImportJob
-            // otherwise it's create new
-
-            if (source != null)
+            [FromQuery] string? source = null,
+            [FromQuery] string? name = null) // name if creating a new one; can't rename atm
+        {            
+            var resourceInfo = await preservation.GetResourceInfo(path);
+            var model = new ImportModel { Path = path, ResourceInfo = resourceInfo, NewName = name };
+            if(resourceInfo.Type == nameof(ArchivalGroup))
             {
+                // This is an update to an existing archival group
+                var existingAg = await preservation.GetArchivalGroup(path, null);
+                model.ArchivalGroup = existingAg;
+            }
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                // we already know where the update file are
+                // This is only for synchronising with S3; There'll need to be a different route
+                // for ad hoc construction of an ImportJob (e.g., it's just one deletion).
                 var importJob = await preservation.GetUpdateJob(path, source);
-                // render the importJob view with the import job ready to be executed
-                return View("ImportJob", importJob);
+                model.ImportJob = importJob;
+                return View("ImportJob", model);
             }
             // else render a view that asks for the S3 source then resubmits
-            var existingAg = await preservation.GetArchivalGroup(path, null);
-            // What's the best way to be really sure this DOES NOT EXIST?
-            // It's allowed to be null here, for creating a new one.
-            var model = new ImportStartModel { Path = path, ArchivalGroup = existingAg };
             return View("ImportStart", model);
+
+            // Create a new AG from anywhere by GET to here at path and name;
+            // form that adds path and submits a GET;
+            // form prevents conflicting path;
+            // doesn't appear under AG
         }
         
 
-        [HttpGet]
+        [HttpPost]
         [ActionName("ImportExecute")]
         [Route("import/{*path}")]
         public async Task<IActionResult> ImportExecuteAsync(
-            [FromBody] ImportJob importJob)
+           //  [FromBody] ImportJob importJob
+           [FromForm] string importJobString
+        )
         {
+            // This could accept JSON data directly but we want to fiddle about with it.
+            var importJob = JsonSerializer.Deserialize<ImportJob>(importJobString);
+            if(importJob == null)
+            {
+                return Problem("Could not find an import job in request");
+            }
+
             // what are we doing here - posting a big JSON job with files to update, delete etc.
             // That works nicely for new / creation - no deletes just additions
 
             // and it works nicely for custom non-diffs...
             // the dashboard can make this import job by generating a diff.
             // But I can make this import job outside the dashboard any way I like.
+            // Would probably post directly to the Preservation API
 
             var processedJob = await preservation.Import(importJob);
             return View("ImportResult", processedJob);
         }
-
-
     }
 
 

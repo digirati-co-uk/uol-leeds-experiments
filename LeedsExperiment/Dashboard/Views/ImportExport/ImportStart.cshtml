@@ -1,13 +1,40 @@
 ﻿@using Dashboard.Helpers
 @using Utils
-@model Dashboard.Models.ImportStartModel
+@model Dashboard.Models.ImportModel
 
 
 <div>
     <h1 class="display-4">Import 📦 - @Model.DisplayName</h1>
+    <p>Path: @Model.Path</p>
 
-
-    <form method="post" action="/import/@(ViewBag.Path)?version=@Model.Version.OcflVersion">
-
+    @if(Model.ArchivalGroup == null)
+    {
+        <p>Specify a source location to create a new Archival Group at @Model.Path</p>
+    }
+    else
+    {
+        <p>Specify a source for updating the existing Archival Group at @Model.Path</p>
+        <p>The existing Archival Group <em>@Model.ArchivalGroup.Name</em> is at version @Model.ArchivalGroup.Version</p>
+    }
+            
+    
+    <form method="get" action="/import/@(Model.Path)">
+        <div class="mb-3">
+            <label for="sourceKey" class="form-label">Source</label>
+            <input type="text" class="form-control" id="sourceKey" name="source" aria-describedby="sourceHelp" value="s3://uol-expts-staging-01/<...key...>" />
+            <div id="sourceHelp" class="form-text">Later you can choose other locations outside this bucket!</div>
+        </div>
+        @if(Model.ArchivalGroup != null)
+        {
+            <div class="mb-3">
+                <label for="newName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="newName" name="name" aria-describedby="nameHelp" value="@Model.NewName" />
+                <div id="nameHelp" class="form-text">The name of the new Archival Group</div>
+            </div>
+        }
+        <button type="submit" class="btn btn-primary">Submit</button>
     </form>
+
+
+
 </div>

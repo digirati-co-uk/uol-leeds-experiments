@@ -493,17 +493,15 @@ public class FedoraWrapper : IFedora
     public async Task<Resource?> GetObject(Uri uri, Transaction? transaction = null)
     {
         // Make a head request to see what this is
-        var req = new HttpRequestMessage(HttpMethod.Head, uri);
-        req.Headers.Accept.Clear();
-        var headResponse = await httpClient.SendAsync(req);
-        if (headResponse.HasArchivalGroupTypeHeader())
+        var info = await GetResourceInfo(uri);
+        if (info.Type == nameof(ArchivalGroup))
         {
             return await GetPopulatedArchivalGroup(uri, null, transaction);
         }
         
         var storageMap = await FindParentStorageMap(uri);
         Resource? resource = null;
-        if(headResponse.HasBinaryTypeHeader())
+        if(info.Type == nameof(Binary))
         {
             var binary = await GetObject<Binary>(uri, transaction);
             if(storageMap != null && binary != null)
@@ -512,7 +510,7 @@ public class FedoraWrapper : IFedora
             }
             resource = binary;
         }
-        else if (headResponse.HasBasicContainerTypeHeader())
+        else if (info.Type == nameof(Container))
         {
             // this is also true for archival group so test this last
             var container = await GetPopulatedContainer(uri, false, transaction, null, false);
@@ -576,6 +574,31 @@ public class FedoraWrapper : IFedora
         return storageMap;
     }
 
+    public async Task<ResourceInfo> GetResourceInfo(Uri uri)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Head, uri);
+        req.Headers.Accept.Clear();
+        var headResponse = await httpClient.SendAsync(req);
+        var result = new ResourceInfo { StatusCode = (int)headResponse.StatusCode };
+        if (headResponse.IsSuccessStatusCode)
+        {
+            result.Exists = true;
+            if (headResponse.HasArchivalGroupTypeHeader())
+            {
+                result.Type = nameof(ArchivalGroup);
+            }
+            if (headResponse.HasBinaryTypeHeader())
+            {
+                result.Type = nameof(Binary);
+            }
+            if (headResponse.HasBasicContainerTypeHeader())
+            {
+                result.Type = nameof(Container);
+            }
+        }
+        return result;
+    }
+
     /// <summary>
     /// Walk up the Uri of a resource until we get to an ArchivalGroup or to the Fedora root
     /// </summary>
@@ -603,10 +626,8 @@ public class FedoraWrapper : IFedora
         // now we need to actually probe for a storage map
         foreach (var testUri in testUris)
         {
-            var testReq = new HttpRequestMessage(HttpMethod.Head, testUri);
-            testReq.Headers.Accept.Clear();
-            var testResponse = await httpClient.SendAsync(testReq);
-            if (testResponse.HasArchivalGroupTypeHeader())
+            var testUriInfo = await GetResourceInfo(testUri);
+            if (testUriInfo.Type == nameof(ArchivalGroup))
             {
                 storageMap = await GetCacheableStorageMap(testUri);
                 return storageMap;
