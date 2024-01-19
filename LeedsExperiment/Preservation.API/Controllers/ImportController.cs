@@ -15,10 +15,10 @@ public class ImportController : Controller
     private IAmazonS3 s3Client;
 
     public ImportController(
-    IStorageMapper storageMapper,
-    IFedora fedora,
-    IOptions<PreservationApiOptions> options,
-    IAmazonS3 awsS3Client
+        IStorageMapper storageMapper,
+        IFedora fedora,
+        IOptions<PreservationApiOptions> options,
+        IAmazonS3 awsS3Client
     )
     {
         this.storageMapper = storageMapper;

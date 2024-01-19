@@ -24,7 +24,7 @@
             <input type="text" class="form-control" id="sourceKey" name="source" aria-describedby="sourceHelp" value="s3://uol-expts-staging-01/<...key...>" />
             <div id="sourceHelp" class="form-text">Later you can choose other locations outside this bucket!</div>
         </div>
-        @if(Model.ArchivalGroup != null)
+        @if(Model.ArchivalGroup == null)
         {
             <div class="mb-3">
                 <label for="newName" class="form-label">Name</label>

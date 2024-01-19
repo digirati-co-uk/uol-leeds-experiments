@@ -71,12 +71,16 @@ namespace Dashboard.Controllers
             [FromQuery] string? name = null) // name if creating a new one; can't rename atm
         {            
             var resourceInfo = await preservation.GetResourceInfo(path);
-            var model = new ImportModel { Path = path, ResourceInfo = resourceInfo, NewName = name };
+            var model = new ImportModel { Path = path, ResourceInfo = resourceInfo };
             if(resourceInfo.Type == nameof(ArchivalGroup))
             {
                 // This is an update to an existing archival group
                 var existingAg = await preservation.GetArchivalGroup(path, null);
                 model.ArchivalGroup = existingAg;
+            } 
+            else
+            {
+                model.NewName = name;
             }
             if (!string.IsNullOrWhiteSpace(source))
             {

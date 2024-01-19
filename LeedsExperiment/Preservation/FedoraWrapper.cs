@@ -208,9 +208,8 @@ public class FedoraWrapper : IFedora
 
     private async void EnsureChecksum(BinaryFile binaryFile)
     {
-        string? expected = null;
-        
-        switch(binaryFile.StorageType)
+        string? expected;
+        switch (binaryFile.StorageType)
         {
             case StorageTypes.FileSystem:
                 var fi = new FileInfo(binaryFile.ExternalLocation);
@@ -332,6 +331,7 @@ public class FedoraWrapper : IFedora
                     .WithContentType(binaryFile.ContentType);
                 break;
             case StorageTypes.S3:
+                // This should instead reference the file in S3, for Fedora to fetch
                 var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
                 var s3Req = new GetObjectRequest() { BucketName = s3Uri.Bucket, Key = s3Uri.Key };
                 var ms = new MemoryStream();
