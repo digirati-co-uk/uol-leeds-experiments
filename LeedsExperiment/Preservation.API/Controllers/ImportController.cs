@@ -27,5 +27,24 @@ public class ImportController : Controller
         this.s3Client = awsS3Client;
     }
 
+    [HttpGet(Name = "ImportJob")]
+    [Route("{*path}")]
+    public async Task<ImportJob?> GetImportJob([FromRoute] string path, [FromQuery] string? source)
+    {
+        // build an import job, with checksums etc, set diffversion, time it.
+        // compare the source with the object and build the diff properties.
+        return null;
+    }
 
+
+    [HttpPost(Name = "ExecuteImport")]
+    [Route("__import")]
+    public async Task<ImportJob?> ExecuteImportJob([FromBody] ImportJob importJob)
+    {
+        // enter a transaction, check the version is the same, do all the stuff it says in the diffs, end transaction
+        // keep a log of the updates (populate the *added props)
+        // get the AG again, see the version, validate it's one on etc
+        // return the import job
+        return null;
+    }
 }
