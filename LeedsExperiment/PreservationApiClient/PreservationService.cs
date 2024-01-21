@@ -11,6 +11,7 @@ public class PreservationService : IPreservation
 
     // This is horrible and wrong
     private const string repositoryPrefix = "api/repository/";
+    private const string infoPrefix = "api/info/";
     private const string agPrefix = "api/archivalGroup/";
     private const string exportPrefix = "api/export/";
     private const string importPrefix = "api/import/";
@@ -72,7 +73,7 @@ public class PreservationService : IPreservation
 
     public async Task<ResourceInfo> GetResourceInfo(string path)
     {
-        var apiPath = $"{repositoryPrefix}__info/{path.TrimStart('/')}";
+        var apiPath = $"{infoPrefix}{path.TrimStart('/')}";
         var infoApi = new Uri(apiPath, UriKind.Relative);
         var info = await _httpClient.GetFromJsonAsync<ResourceInfo>(infoApi);
         return info!;
@@ -98,9 +99,9 @@ public class PreservationService : IPreservation
         throw new InvalidOperationException("Could not get an export object back");        
     }
 
-    public async Task<ImportJob> GetUpdateJob(string path, string source)
+    public async Task<ImportJob> GetUpdateJob(string archivalGroupPath, string source)
     {
-        var apiPath = $"{importPrefix}{path.TrimStart('/')}?source={source}";
+        var apiPath = $"{importPrefix}{archivalGroupPath.TrimStart('/')}?source={source}";
         var importApi = new Uri(apiPath, UriKind.Relative);
         var importJob = await _httpClient.GetFromJsonAsync<ImportJob>(importApi);
         // What's the best way to deal with problems here?

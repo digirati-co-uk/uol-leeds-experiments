@@ -102,7 +102,7 @@
             </tr>
         </tbody>
     </table>
-    }
+    
 
     <form method="post" action="/import/@(Model.Path)">
 
@@ -110,8 +110,8 @@
 
         <div class="mb-3">
             <label for="importJob" class="form-label">Raw JSON of the importJob</label>
-            <textarea class="form-control" id="importJob" rows="3" name="importJobString">
-@JsonSerializer.Serialize(Model.ImportJob)
+            <textarea class="form-control" id="importJob" rows="3" name="importJobString" style="height:50vh; font-family:monospace">
+@JsonSerializer.Serialize(Model.ImportJob, new JsonSerializerOptions{WriteIndented=true})
 </textarea>
         </div>
     </form>

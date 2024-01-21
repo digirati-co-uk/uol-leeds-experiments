@@ -33,10 +33,10 @@ public interface IPreservation
     /// The reason to split is to allow the operator (a human user, or software) to see the diff - to verify that the job is what
     /// was intended or expected.
     /// </summary>
-    /// <param name="path"></param>
+    /// <param name="archivalGroupPath"></param>
     /// <param name="source"></param>
     /// <returns>A partially populated ImportJob</returns>
-    Task<ImportJob> GetUpdateJob(string path, string source);
+    Task<ImportJob> GetUpdateJob(string archivalGroupPath, string source);
 
     /// <summary>
     /// "Execute" the update job obtrained above.

@@ -9,7 +9,10 @@ public class Checksum
     {
         try
         {
-            openedStream.Position = 0;
+            if (openedStream.CanSeek)
+            {
+                openedStream.Position = 0;
+            }
             // Compute the hash of the fileStream.
             byte[] hashValue = hashAlgorithm.ComputeHash(openedStream);
             // Write the name and hash value of the file to the console.

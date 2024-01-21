@@ -230,6 +230,8 @@ public class FedoraWrapper : IFedora
                 // could get a byte array here and then pass it along eventually to MakeBinaryPutOrPost
                 // for now just read it twice.
                 // Later we'll get the sha256 checksum from metadata
+                // Or the MD5 from eTag?
+                // BEWARE that multipart uploads will not have the MD5 as the eTag.
                 break;
             default:
                 throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
@@ -493,6 +495,7 @@ public class FedoraWrapper : IFedora
     public async Task<Resource?> GetObject(Uri uri, Transaction? transaction = null)
     {
         // Make a head request to see what this is
+        
         var info = await GetResourceInfo(uri);
         if (info.Type == nameof(ArchivalGroup))
         {
@@ -587,11 +590,11 @@ public class FedoraWrapper : IFedora
             {
                 result.Type = nameof(ArchivalGroup);
             }
-            if (headResponse.HasBinaryTypeHeader())
+            else if (headResponse.HasBinaryTypeHeader())
             {
                 result.Type = nameof(Binary);
             }
-            if (headResponse.HasBasicContainerTypeHeader())
+            else if (headResponse.HasBasicContainerTypeHeader())
             {
                 result.Type = nameof(Container);
             }

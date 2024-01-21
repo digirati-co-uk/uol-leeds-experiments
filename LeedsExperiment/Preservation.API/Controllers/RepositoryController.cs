@@ -15,18 +15,8 @@ namespace Preservation.API.Controllers
             this.fedora = fedora;
         }
 
-        [HttpGet(Name = "GetInfo")]
-        [Route("__info/{*path}")]
-        public async Task<ActionResult<ResourceInfo?>> Info(
-            [FromRoute] string path)
-        {
-            var uri = fedora.GetUri(path);
-            var info = await fedora.GetResourceInfo(uri);
-            return info;
-        }
-
         [HttpGet(Name = "Browse")]
-        [Route("{*path}")]
+        [Route("{*path}", Order = 2)]
         public async Task<ActionResult<Resource?>> Index(
             [FromRoute] string? path = null)
         {
