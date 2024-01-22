@@ -8,6 +8,8 @@ using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using System;
+using static System.Net.WebRequestMethods;
 
 namespace Preservation.API.Controllers;
 
@@ -220,18 +222,35 @@ public class ImportController : Controller
         // We can't learn anything about containers this way other than that there are slugs in path
         // We can't learn anything about intended name (dc:title) from this, but that's OK for now
         // That kind of data should be in METS files; we can enhance the ImportJob with it later in a real world application
-        var listObjectsReq = new ListObjectsRequest()
+        var listObjectsReq = new ListObjectsV2Request()
         { 
             BucketName = s3Uri.Bucket,
-            Prefix = $"{s3Uri.Key.TrimEnd('/')}/"
+            Prefix = $"{s3Uri.Key.TrimEnd('/')}/" //,
+            // OptionalObjectAttributes = ["Content-Type"] - need to work out how to get content type back here
+            // https://stackoverflow.com/a/44179929
+            // application/x-directory
         };
+
         var importSource = new ImportSource();
-        var response = await s3Client.ListObjectsAsync(listObjectsReq);
+        var response = await s3Client.ListObjectsV2Async(listObjectsReq);
         var containerPaths = new HashSet<string>();
         foreach (S3Object obj in response.S3Objects)
         {
+            if(obj.Key.EndsWith('/') && obj.Size == 0)
+            {
+                // This is an AWS "folder" - but we can have a better check than this -
+                // also see if it's application/x-directory
+                continue;
+            }
+            // Future: We *require* that S3 source folders have sha256 hashes in their metadata
+            // so we don't have to do this:
             var s3Stream = await s3Client!.GetObjectStreamAsync(obj.BucketName, obj.Key, null);
             var sha512Digest = Checksum.Sha512FromStream(s3Stream);
+            // (and all our Fedora objects have sha-256)
+            // We can also do an eTag comparison for smaller files
+            // We can also do a size comparison as a sanity check - this can't catch all changes obvs
+            // but if source and current have same checksum but different sizes then something's up
+
             var sourcePath = obj.Key.Remove(0, listObjectsReq.Prefix.Length);
             var nameAndParentPath = new NameAndParentPath(sourcePath);
             if(nameAndParentPath.ParentPath != null)
