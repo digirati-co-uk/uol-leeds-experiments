@@ -125,7 +125,14 @@ namespace Dashboard.Controllers
             // Would probably post directly to the Preservation API
 
             var processedJob = await preservation.Import(importJob);
-            return View("ImportResult", processedJob);
+            var resultingAg = await preservation.GetArchivalGroup(importJob.ArchivalGroupPath, null);
+            var model = new ImportModel
+            {
+                ImportJob = processedJob,
+                ArchivalGroup = resultingAg,
+                Path = importJob.ArchivalGroupPath
+            };
+            return View("ImportResult", model);
         }
     }
 

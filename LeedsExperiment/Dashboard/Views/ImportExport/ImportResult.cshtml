@@ -1,0 +1,114 @@
+﻿@using Dashboard.Borrowed
+@using Dashboard.Helpers
+@using System.Text.Json
+@using Utils
+@model Dashboard.Models.ImportModel
+
+<div>
+    <h1 class="display-4">Import Result 📦 - @Model.DisplayName</h1>
+    <p>Path: @Model.Path</p>
+    <p><a href="/ocfl/@Model.Path">View storage (OCFL)</a></p>
+
+    <h2>After importing:</h2>
+
+    <!-- error handling later! -->
+    <div class="alert alert-success" role="alert">
+        @if (Model.ImportJob.IsUpdate)
+        {
+            <p><b>@Model.ArchivalGroup!.Name</b> updated to @Model.ArchivalGroup.Version</p>
+        }
+        else
+        {
+            <p><b>@Model.ArchivalGroup!.Name</b> created.</p>
+        }
+    </div>
+
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th scope="row">Archival Group Path</th>
+                <td>@Model.Path</td>
+            </tr>
+            <tr>
+                <th scope="row">Source (@Model.ImportJob!.StorageType)</th>
+                <td>@Model.ImportJob.Source</td>
+            </tr>
+            <tr>
+                <th scope="row">Name</th>
+                <td>@Model.ArchivalGroup.Name</td>
+            </tr>
+            <tr>
+                <th scope="row">Import duration</th>
+                <td>@((Model.ImportJob.End - Model.ImportJob.Start).TotalMilliseconds) ms</td>
+            </tr>
+            <tr>
+                <th scope="row">Version:</th>
+                <td>@(Model.ImportJob.DiffVersion?.ToString() ?? "(None)") => @Model.ArchivalGroup.Version</td>
+            </tr>
+            <tr>
+                <th scope="row">Containers added</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var cd in Model.ImportJob.ContainersAdded)
+                        {
+                            <li>@cd.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files added</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesAdded)
+                        {
+                            <li>@file.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files deleted</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesDeleted)
+                        {
+                            <li>@file.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Files patched</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var file in Model.ImportJob.FilesPatched)
+                        {
+                            <li>@file.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Containers deleted</th>
+                <td>
+                    <ul class="list-unstyled">
+                        @foreach (var cd in Model.ImportJob.ContainersDeleted)
+                        {
+                            <li>@cd.Path</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+
+        <div class="mb-3">
+            <label for="importJob" class="form-label">Raw JSON of the importJob</label>
+            <textarea class="form-control" id="importJob" rows="3" name="importJobString" style="height:50vh; font-family:monospace">
+                @JsonSerializer.Serialize(Model.ImportJob, new JsonSerializerOptions { WriteIndented = true })
+</textarea>
+        </div>
+</div>

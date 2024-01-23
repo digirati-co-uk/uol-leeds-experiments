@@ -19,7 +19,7 @@ public class ImportModel
     }
     public required string Path { get; set; }
     public ArchivalGroup? ArchivalGroup { get; set; }
-    public required ResourceInfo ResourceInfo { get; set; }
+    public ResourceInfo? ResourceInfo { get; set; }
     public ImportJob? ImportJob { get; set; }
 
     /// <summary>

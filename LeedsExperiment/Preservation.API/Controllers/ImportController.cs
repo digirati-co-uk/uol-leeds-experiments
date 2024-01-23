@@ -206,7 +206,41 @@ public class ImportController : Controller
         // keep a log of the updates (populate the *added props)
         // get the AG again, see the version, validate it's one on etc
         // return the import job
-        throw new NotImplementedException();
+
+        ArchivalGroup? archivalGroup;
+        var transaction = await fedora.BeginTransaction();
+
+        if(!importJob.IsUpdate)
+        {
+            // A new AG
+            // Get the parent, test it exists, get the AG, check it doesn't
+
+            Uri? parentUri = null; // get this
+            string slug = importJob.ArchivalGroupPath.GetLastPathElement();
+
+            archivalGroup = await fedora.CreateArchivalGroup(parentUri, slug, importJob.ArchivalGroupName, transaction);
+        }
+        else
+        {
+            archivalGroup = await fedora.GetPopulatedArchivalGroup(importJob.ArchivalGroupPath, null, transaction);
+        }
+
+        foreach (var container in importJob.ContainersToAdd.OrderBy(cd => cd.Path))
+        {
+            // create container
+        }
+
+        // what about deletions of containers? conflict?
+
+        // create files
+        // patch files
+        // delete files
+
+
+
+
+        importJob.ArchivalGroupName = $"{importJob.ArchivalGroupName} imported!";
+        return importJob;
     }
 
 
