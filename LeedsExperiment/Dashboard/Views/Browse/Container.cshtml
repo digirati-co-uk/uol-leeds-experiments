@@ -3,6 +3,20 @@
 @model Fedora.Abstractions.Container
 
 <div>
+    @if(ViewBag.Result != null)
+    {
+        <div class="alert alert-success" role="alert">
+            <p>@ViewBag.Result</p>
+        </div>
+    }
+
+    @if (ViewBag.Problem != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>@ViewBag.Problem</p>
+        </div>
+    }
+
     <partial name="_ArchivalGroupHeader" />
 
     @if (Model.Type == "RepositoryRoot")
@@ -18,5 +32,16 @@
     }
 
     <partial name="_ContainerTable" model="Model" />
+
+    @if (ViewBag.ArchivalGroupPath == null)
+    {
+        <form action="/create/@ViewBag.Path" method="post">
+            <div class="mb-3">
+                <label for="childContainerName" class="form-label">Add a child container:</label>
+                <input type="text" class="form-control" id="childContainerName" name="name" placeholder="(📁 path-safe name of child container)">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    }
 
 </div>

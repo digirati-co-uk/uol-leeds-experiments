@@ -1,4 +1,5 @@
 ﻿using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Preservation;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -34,6 +35,11 @@ public class PreservationService : IPreservation
         }
         var req = new HttpRequestMessage(HttpMethod.Get, new Uri($"{repositoryPrefix}{path.TrimStart('/')}", UriKind.Relative));
         var response = await _httpClient.SendAsync(req);
+        return await ParseResource(response);
+    }
+
+    private static async Task<Resource?> ParseResource(HttpResponseMessage response)
+    {
         // This could be a Container, an ArchivalGroup, or a Binary
         var content = await response.Content.ReadAsStringAsync();
 
@@ -122,5 +128,19 @@ public class PreservationService : IPreservation
             return processedImportJob;
         }
         throw new InvalidOperationException("Could not get a processed import object back");
+    }
+
+
+    public async Task<Container> CreateContainer(string path)
+    {
+        // This PUT is a bit too general
+        var req = new HttpRequestMessage(HttpMethod.Put, new Uri($"{repositoryPrefix}{path.TrimStart('/')}", UriKind.Relative));
+        var response = await _httpClient.SendAsync(req);
+        var container = (await ParseResource(response)) as Container;
+        if(container == null)
+        {
+            throw new InvalidOperationException("Resource is not a container");
+        }
+        return container;
     }
 }

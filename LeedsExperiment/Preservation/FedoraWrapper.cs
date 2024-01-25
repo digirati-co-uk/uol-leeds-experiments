@@ -577,9 +577,10 @@ public class FedoraWrapper : IFedora
         return storageMap;
     }
 
-    public async Task<ResourceInfo> GetResourceInfo(Uri uri)
+    public async Task<ResourceInfo> GetResourceInfo(Uri uri, Transaction? transaction = null)
     {
-        var req = new HttpRequestMessage(HttpMethod.Head, uri);
+        var req = new HttpRequestMessage(HttpMethod.Head, uri)
+            .InTransaction(transaction);
         req.Headers.Accept.Clear();
         var headResponse = await httpClient.SendAsync(req);
         var result = new ResourceInfo { StatusCode = (int)headResponse.StatusCode };

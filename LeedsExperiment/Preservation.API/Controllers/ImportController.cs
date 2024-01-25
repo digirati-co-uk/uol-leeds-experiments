@@ -4,12 +4,11 @@ using Amazon.S3.Util;
 using Fedora;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
+using Fedora.ApiModel;
 using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
-using System;
-using static System.Net.WebRequestMethods;
 
 namespace Preservation.API.Controllers;
 
@@ -22,85 +21,38 @@ public class ImportController : Controller
     private readonly PreservationApiOptions options;
     private IAmazonS3 s3Client;
     private FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
+    private ILogger<ImportController> logger;
 
     public ImportController(
         IStorageMapper storageMapper,
         IFedora fedora,
         IOptions<PreservationApiOptions> options,
-        IAmazonS3 awsS3Client
+        IAmazonS3 awsS3Client,
+        ILogger<ImportController> logger
     )
     {
         this.storageMapper = storageMapper;
         this.fedora = fedora;
         this.options = options.Value;
         this.s3Client = awsS3Client;
+        this.logger = logger;
     }
 
-    class NameAndParentPath
-    {
-        public string Name { get; set; }
-        public string? ParentPath { get; set; }
-
-        public NameAndParentPath(string path)
-        {
-            var pathParts = path.Split(['/']);
-            Name = pathParts[^1];
-            if (pathParts.Length > 1)
-            {
-                ParentPath = path.Substring(0, path.Length - Name.Length - 1);
-            }
-        }
-    }
+    
 
     [HttpGet(Name = "ImportJob")]
     [Route("{*archivalGroupPath}")]
     public async Task<ImportJob?> GetImportJob([FromRoute] string archivalGroupPath, [FromQuery] string source)
     {
         var agUri = fedora.GetUri(archivalGroupPath);
-        ArchivalGroup? archivalGroup;
         var diffStart = DateTime.Now;
-        var info = await fedora.GetResourceInfo(agUri);
-        if(info.Exists && info.Type == nameof(ArchivalGroup))
-        {
-            archivalGroup = await fedora.GetPopulatedArchivalGroup(agUri);
-        } 
-        else if (info.StatusCode == 404) // HTTP leakage
-        {
-            archivalGroup = null;
-            // it doesn't exist - but we still need to check that:
-            // - it has an immediate parent container
-            // - that container is not itself an archival group or part of one
-            var npp = new NameAndParentPath(archivalGroupPath);
-            if(npp.ParentPath == null)
-            {
-                throw new InvalidOperationException($"No parent object for {archivalGroupPath}");
-            }
-            var parentInfo = await fedora.GetObject(npp.ParentPath);
-            if (parentInfo == null)
-            {
-                throw new InvalidOperationException($"No parent object for {archivalGroupPath}");
-            }
-            if(parentInfo.Type == nameof(ArchivalGroup))
-            {
-                throw new InvalidOperationException($"The parent of {archivalGroupPath} is an Archival Group");
-            }
-            if(parentInfo.PartOf != null)
-            {
-                throw new InvalidOperationException($"{archivalGroupPath} is already part of an Archival Group");
-            }
-            if (parentInfo.Type != nameof(Container))
-            {
-                throw new InvalidOperationException($"The parent of {archivalGroupPath} is not a container");
-            }
-        } 
-        else
-        {
-            throw new InvalidOperationException($"Cannot create {archivalGroupPath} for {info.Type}, status: {info.StatusCode}");
-        }
+
+        ArchivalGroup? archivalGroup;
+        archivalGroup = await GetValidatedArchivalGroupForImportJob(agUri);
 
         // This is either an existing Archival Group, or a 404 where the immediate parent is a Container that is not itself part of an Archival Group.
         // So now evaluate the source:
-        
+
         var importSource = await GetImportSource(source, agUri);
         var importJob = new ImportJob
         {
@@ -110,7 +62,7 @@ public class ImportController : Controller
             Source = source,
             DiffStart = diffStart
         };
-        if(archivalGroup == null)
+        if (archivalGroup == null)
         {
             // This is a new object
             importJob.ContainersToAdd = importSource.Containers;
@@ -125,6 +77,59 @@ public class ImportController : Controller
         }
         importJob.DiffEnd = DateTime.Now;
         return importJob;
+    }
+
+    /// <summary>
+    /// Returns an archivalGroup if there is one at archivalGroupUri
+    /// Returns null if there isn't one there
+    /// Throws an exception if it's not possible to _create_ an archival group there.
+    /// </summary>
+    /// <param name="archivalGroupUri"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private async Task<ArchivalGroup?> GetValidatedArchivalGroupForImportJob(Uri archivalGroupUri, Transaction? transaction = null)
+    {
+        ArchivalGroup? archivalGroup = null;
+        var info = await fedora.GetResourceInfo(archivalGroupUri, transaction);
+        if (info.Exists && info.Type == nameof(ArchivalGroup))
+        {
+            archivalGroup = await fedora.GetPopulatedArchivalGroup(archivalGroupUri, null, transaction);
+        }
+        else if (info.StatusCode == 404) // HTTP leakage
+        {
+            archivalGroup = null;
+            // it doesn't exist - but we still need to check that:
+            // - it has an immediate parent container
+            // - that container is not itself an archival group or part of one
+            var npp = new NameAndParentPath(archivalGroupUri.AbsolutePath);
+            if (npp.ParentPath == null)
+            {
+                throw new InvalidOperationException($"No parent object for {archivalGroupUri}");
+            }
+            var parentInfo = await fedora.GetObject(npp.ParentPath, transaction);
+            if (parentInfo == null)
+            {
+                throw new InvalidOperationException($"No parent object for {archivalGroupUri}");
+            }
+            if (parentInfo.Type == nameof(ArchivalGroup))
+            {
+                throw new InvalidOperationException($"The parent of {archivalGroupUri} is an Archival Group");
+            }
+            if (parentInfo.PartOf != null)
+            {
+                throw new InvalidOperationException($"{archivalGroupUri} is already part of an Archival Group");
+            }
+            if (parentInfo.Type != nameof(Container))
+            {
+                throw new InvalidOperationException($"The parent of {archivalGroupUri} is not a container");
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Cannot create {archivalGroupUri} for {info.Type}, status: {info.StatusCode}");
+        }
+
+        return archivalGroup;
     }
 
     private void PopulateDiffTasks(ArchivalGroup archivalGroup, ImportSource importSource, ImportJob importJob)
@@ -202,44 +207,117 @@ public class ImportController : Controller
     [Route("__import")]
     public async Task<ImportJob?> ExecuteImportJob([FromBody] ImportJob importJob)
     {
+        logger.LogInformation("Executing import job {path}", importJob.ArchivalGroupPath);
+
         // enter a transaction, check the version is the same, do all the stuff it says in the diffs, end transaction
         // keep a log of the updates (populate the *added props)
         // get the AG again, see the version, validate it's one on etc
         // return the import job
+        if (importJob.ArchivalGroupUri == null)
+        {
+            throw new InvalidOperationException("No URI supplied for ArchivalGroup");
+        }
 
-        ArchivalGroup? archivalGroup;
+        importJob.Start = DateTime.Now;
         var transaction = await fedora.BeginTransaction();
+        ArchivalGroup? archivalGroup = await GetValidatedArchivalGroupForImportJob(importJob.ArchivalGroupUri, transaction);
 
-        if(!importJob.IsUpdate)
+        if (!importJob.IsUpdate)
         {
-            // A new AG
-            // Get the parent, test it exists, get the AG, check it doesn't
+            if(archivalGroup != null)
+            {
+                await fedora.RollbackTransaction(transaction);
+                throw new InvalidOperationException("An Archival Group has recently been created at this URI");
+            }
 
-            Uri? parentUri = null; // get this
-            string slug = importJob.ArchivalGroupPath.GetLastPathElement();
+            if (string.IsNullOrWhiteSpace(importJob.ArchivalGroupName))
+            {
+                await fedora.RollbackTransaction(transaction);
+                throw new InvalidOperationException("No name supplied for this archival group");
+            }
 
-            archivalGroup = await fedora.CreateArchivalGroup(parentUri, slug, importJob.ArchivalGroupName, transaction);
+            archivalGroup = await fedora.CreateArchivalGroup(
+                importJob.ArchivalGroupUri.Parent(), 
+                importJob.ArchivalGroupUri.Slug(), 
+                importJob.ArchivalGroupName, transaction);
+
+            if (archivalGroup == null)
+            {
+                await fedora.RollbackTransaction(transaction);
+                throw new InvalidOperationException("No archival group was returned from creation");
+            }
         }
-        else
+
+        // We need to keep the transaction alive throughout this process
+        // will need to time operations and call fedora.KeepTransactionAlive
+
+        try
         {
-            archivalGroup = await fedora.GetPopulatedArchivalGroup(importJob.ArchivalGroupPath, null, transaction);
-        }
+            foreach (var container in importJob.ContainersToAdd.OrderBy(cd => cd.Path))
+            {
+                logger.LogInformation("Creating container {path}", container.Path);
+                var fedoraContainer = await fedora.CreateContainer(container, transaction);
+                logger.LogInformation("Container created at {location}", fedoraContainer!.Location);
+                importJob.ContainersAdded.Add(container); // will want to validate this more
+            }
 
-        foreach (var container in importJob.ContainersToAdd.OrderBy(cd => cd.Path))
+            // what about deletions of containers? conflict?
+
+            // create files
+            foreach (var binaryFile in importJob.FilesToAdd)
+            {
+                logger.LogInformation("Adding file {path}", binaryFile.Path);
+                var fedoraBinary = await fedora.PutBinary(binaryFile, transaction);
+                logger.LogInformation("Binary created at {location}", fedoraBinary!.Location);
+                importJob.FilesAdded.Add(binaryFile);
+            }
+
+            // patch files
+            // This is EXACTLY the same as Add.
+            // We will need to accomodate some RDF updates - but nothing that can't be carried on BinaryFile
+            // nothing _arbitrary_
+            foreach (var binaryFile in importJob.FilesToPatch)
+            {
+                logger.LogInformation("Patching file {path}", binaryFile.Path);
+                var fedoraBinary = await fedora.PutBinary(binaryFile, transaction);
+                logger.LogInformation("Binary PATCHed at {location}", fedoraBinary!.Location);
+                importJob.FilesPatched.Add(binaryFile);
+            }
+
+            // delete files
+            foreach (var binaryFile in importJob.FilesToDelete)
+            {
+                logger.LogInformation("Deleting file {path}", binaryFile.Path);
+                var location = archivalGroup!.GetResourceUri(binaryFile.Path);
+                await fedora.Delete(location, transaction);
+                logger.LogInformation("Binary DELETEd at {location}", location);
+                importJob.FilesDeleted.Add(binaryFile);
+            }
+
+
+            // delete containers
+            // Should we verify that the container is empty first?
+            // Do we want to allow deletion of non-empty containers? It wouldn't come from a diff importJob
+            // but might come from other importJob use.
+            foreach (var container in importJob.ContainersToDelete)
+            {
+                logger.LogInformation("Deleting container {path}", container.Path);
+                var location = archivalGroup!.GetResourceUri(container.Path);
+                await fedora.Delete(location, transaction);
+                logger.LogInformation("Container DELETEd at {location}", location);
+                importJob.ContainersDeleted.Add(container);
+            }
+        }
+        catch(Exception ex)
         {
-            // create container
+            logger.LogError(ex, "Caught error in importJob, rolling back transaction");
+            await fedora.RollbackTransaction(transaction);
+            throw;
         }
 
-        // what about deletions of containers? conflict?
+        await fedora.CommitTransaction(transaction);
 
-        // create files
-        // patch files
-        // delete files
-
-
-
-
-        importJob.ArchivalGroupName = $"{importJob.ArchivalGroupName} imported!";
+        importJob.End = DateTime.Now;
         return importJob;
     }
 

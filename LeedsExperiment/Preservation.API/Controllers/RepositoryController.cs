@@ -1,5 +1,6 @@
 ﻿using Fedora;
 using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Preservation.API.Controllers
@@ -35,6 +36,25 @@ namespace Preservation.API.Controllers
                 resource = await fedora.GetObject(path);
             }
             return resource;
+        }
+
+        [HttpPut(Name = "CreateContainer")]
+        [Route("{*path}", Order = 3)]
+        public async Task<ActionResult<Container?>> CreateContainer(
+            [FromRoute] string path)
+        {
+            // DANGER - this needs to do the same kinds of checks at the Fedora level that the Dashboard is doing
+            // This currently should only be used to create a container (not a binary) and only outside of an archival group.
+
+            var npp = new NameAndParentPath(path);
+            var cd = new ContainerDirectory() { 
+                Name = npp.Name, 
+                Parent = fedora.GetUri(npp.ParentPath ?? string.Empty), 
+                Path = npp.Name 
+            };
+
+            var newContainer = await fedora.CreateContainer(cd);
+            return newContainer;
         }
 
     }

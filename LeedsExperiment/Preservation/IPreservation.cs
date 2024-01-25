@@ -1,4 +1,5 @@
 ﻿using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 
 namespace Preservation;
 
@@ -49,4 +50,11 @@ public interface IPreservation
     /// <param name="importJob"></param>
     /// <returns>A fully populated Job including the results</returns>    // 
     Task<ImportJob> Import(ImportJob importJob);
+
+    /// <summary>
+    /// For creating containers outside of an archival group - or maybe even within one, later
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    Task<Container> CreateContainer(string path);
 }
