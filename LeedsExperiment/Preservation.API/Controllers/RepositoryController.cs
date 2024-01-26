@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Preservation.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/repository/{*path}")]
     [ApiController]
     public class RepositoryController : Controller
     {
@@ -16,8 +16,7 @@ namespace Preservation.API.Controllers
             this.fedora = fedora;
         }
 
-        [HttpGet(Name = "Browse")]
-        [Route("{*path}", Order = 2)]
+        [HttpGet]
         public async Task<ActionResult<Resource?>> Index(
             [FromRoute] string? path = null)
         {
@@ -38,8 +37,7 @@ namespace Preservation.API.Controllers
             return resource;
         }
 
-        [HttpPut(Name = "CreateContainer")]
-        [Route("{*path}", Order = 3)]
+        [HttpPut]
         public async Task<ActionResult<Container?>> CreateContainer(
             [FromRoute] string path)
         {

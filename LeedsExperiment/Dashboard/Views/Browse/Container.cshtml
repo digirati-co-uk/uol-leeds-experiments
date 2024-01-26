@@ -44,4 +44,28 @@
         </form>
     }
 
+    @if (ViewBag.ArchivalGroupPath == null && Model.Type != "RepositoryRoot")
+    {
+        <form id="newAgForm" action="/import/@ViewBag.Path/NEW-AG" method="get">
+            <div class="mb-3">
+                <label for="agName" class="form-label">Create an Archival Group:</label>
+                <input type="text" class="form-control" id="agName" name="name" placeholder="(📦 path-safe name of archival group)">
+            </div>
+            <button type="submit" id="btnAgSubmit" class="btn btn-primary">Submit</button>
+        </form>      
+        
+        <script type="text/javascript">
+
+            const prefix = "/import/@(ViewBag.Path)/";
+            const agForm = document.getElementById("newAgForm");
+            agForm.addEventListener("submit", function (ev) {
+                ev.preventDefault();
+                const name = document.getElementById("agName").value;
+                agForm.action = prefix + name;
+                agForm.submit();
+            });
+
+        </script>
+    }
+
 </div>

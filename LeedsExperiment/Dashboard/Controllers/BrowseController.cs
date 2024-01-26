@@ -99,6 +99,8 @@ public class BrowseController : Controller
         }
 
         Container newContainer = await preservation.CreateContainer(path);
+        ViewBag.Parent = "/browse/" + parentPath;
+
 
         ViewBag.Result = $"Container created at path {path}";
         return View("Container", newContainer);
