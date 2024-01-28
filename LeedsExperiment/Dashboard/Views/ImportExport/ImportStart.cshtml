@@ -6,7 +6,6 @@
 <div>
     <h1 class="display-4">Import 📦 - @Model.DisplayName</h1>
     <p>Path: @Model.Path</p>
-    <p><a href="/ocfl/@Model.Path">View storage (OCFL)</a></p>
 
     @if(Model.ArchivalGroup == null)
     {
@@ -14,6 +13,7 @@
     }
     else
     {
+        <p><a href="/ocfl/@Model.Path">View storage (OCFL)</a></p>
         <p>Specify a source for updating the existing Archival Group at @Model.Path</p>
         <p>The existing Archival Group <em>@Model.ArchivalGroup.Name</em> is at version @Model.ArchivalGroup.Version</p>
     }
@@ -29,7 +29,7 @@
         {
             <div class="mb-3">
                 <label for="newName" class="form-label">Name</label>
-                <input type="text" class="form-control" id="newName" name="name" aria-describedby="nameHelp" value="@Model.NewName" />
+                <input type="text" class="form-control" id="newName" name="name" aria-describedby="nameHelp" value="@Model.Name" />
                 <div id="nameHelp" class="form-text">The name of the new Archival Group</div>
             </div>
         }

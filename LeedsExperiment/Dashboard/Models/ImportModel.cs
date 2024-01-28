@@ -6,24 +6,15 @@ namespace Dashboard.Models;
 
 public class ImportModel
 {
-    public string DisplayName 
-    { 
-        get
-        {
-            if(ArchivalGroup == null)
-            {
-                return "[New Archival Group]";
-            }
-            return ArchivalGroup.GetDisplayName();
-        } 
-    }
+    public string DisplayName => ArchivalGroup?.GetDisplayName() ?? Name!;
     public required string Path { get; set; }
     public ArchivalGroup? ArchivalGroup { get; set; }
     public ResourceInfo? ResourceInfo { get; set; }
     public ImportJob? ImportJob { get; set; }
 
     /// <summary>
-    ///  The name to give a new ArchivalGroup on creation
+    ///  The name to give a new Archival Group on creation, or the name of the current
+    ///  Archival Group.
     /// </summary>
-    public string? NewName { get; internal set; }
+    public string? Name { get; internal set; }
 }

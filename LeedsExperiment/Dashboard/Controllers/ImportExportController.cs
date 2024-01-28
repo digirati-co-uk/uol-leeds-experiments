@@ -78,15 +78,12 @@ namespace Dashboard.Controllers
                 var existingAg = await preservation.GetArchivalGroup(path, null);
                 model.ArchivalGroup = existingAg;
             } 
-            else if(resourceInfo.StatusCode == 404)
-            {
-                model.NewName = name;
-            }
-            else
+            else if (resourceInfo.StatusCode != 404)
             {
                 ViewBag.Problem = "Invalid Status code: " + resourceInfo.StatusCode;
                 return View("ImportStart", model);
             }
+            model.Name = name;
             if (!string.IsNullOrWhiteSpace(source))
             {
                 // we already know where the update file are
@@ -94,7 +91,7 @@ namespace Dashboard.Controllers
                 // for ad hoc construction of an ImportJob (e.g., it's just one deletion).
                 var importJob = await preservation.GetUpdateJob(path, source);
                 model.ImportJob = importJob;
-                importJob.ArchivalGroupName = name;
+                importJob.ArchivalGroupName = model.ArchivalGroup?.Name ?? model.Name;
                 return View("ImportJob", model);
             }
             // else render a view that asks for the S3 source then resubmits

@@ -20,7 +20,7 @@
 
     @if(Model.ArchivalGroup == null)
     {
-        <p>This import will create a new Archival Group at @Model.Path with name <b>@Model.NewName</b></p>
+        <p>This import will create a new Archival Group at @Model.Path with name <b>@Model.Name</b></p>
     }
     else
     {
@@ -40,7 +40,7 @@
             </tr>
             <tr>
                 <th scope="row">Name</th>
-                <td>@(Model.ArchivalGroup?.Name ?? Model.NewName)</td>
+                <td>@(Model.ArchivalGroup?.Name ?? Model.Name)</td>
             </tr>
             <tr>
                 <th scope="row">Diff duration</th>

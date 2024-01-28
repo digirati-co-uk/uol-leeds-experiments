@@ -102,7 +102,7 @@ public class BrowseController : Controller
         ViewBag.Parent = "/browse/" + parentPath;
 
 
-        ViewBag.Result = $"Container created at path {path}";
+        ViewBag.CreateResult = $"Container created at path {path}";
         return View("Container", newContainer);
     }
 }

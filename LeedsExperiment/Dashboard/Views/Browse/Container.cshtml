@@ -3,69 +3,99 @@
 @model Fedora.Abstractions.Container
 
 <div>
-    @if(ViewBag.Result != null)
+    @if(ViewBag.CreateResult != null)
     {
         <div class="alert alert-success" role="alert">
-            <p>@ViewBag.Result</p>
+            <p>@ViewBag.CreateResult</p>
         </div>
-    }
 
-    @if (ViewBag.Problem != null)
-    {
-        <div class="alert alert-danger" role="alert">
-            <p>@ViewBag.Problem</p>
-        </div>
-    }
-
-    <partial name="_ArchivalGroupHeader" />
-
-    @if (Model.Type == "RepositoryRoot")
-    {
-        <h1 class="display-4">🏠 @Model.GetDisplayName()</h1>
-    } 
-    else
-    {
         <partial name="_ParentLink" />
-
-        <h1 class="display-4">📁 @Model.GetDisplayName()</h1>
-        <partial name="_CommonMetadata" model="Model" />
     }
-
-    <partial name="_ContainerTable" model="Model" />
-
-    @if (ViewBag.ArchivalGroupPath == null)
-    {
-        <form action="/create/@ViewBag.Path" method="post">
-            <div class="mb-3">
-                <label for="childContainerName" class="form-label">Add a child container:</label>
-                <input type="text" class="form-control" id="childContainerName" name="name" placeholder="(📁 path-safe name of child container)">
+    else
+    {     
+        @if (ViewBag.Problem != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                <p>@ViewBag.Problem</p>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-    }
+        }
 
-    @if (ViewBag.ArchivalGroupPath == null && Model.Type != "RepositoryRoot")
-    {
-        <form id="newAgForm" action="/import/@ViewBag.Path/NEW-AG" method="get">
-            <div class="mb-3">
-                <label for="agName" class="form-label">Create an Archival Group:</label>
-                <input type="text" class="form-control" id="agName" name="name" placeholder="(📦 path-safe name of archival group)">
+        <partial name="_ArchivalGroupHeader" />
+
+        @if (Model.Type == "RepositoryRoot")
+        {
+            <h1 class="display-4">🏠 @Model.GetDisplayName()</h1>
+        } 
+        else
+        {
+            <partial name="_ParentLink" />
+
+            <h1 class="display-4">📁 @Model.GetDisplayName()</h1>
+            <partial name="_CommonMetadata" model="Model" />
+        }
+
+        <partial name="_ContainerTable" model="Model" />
+
+        @if (ViewBag.ArchivalGroupPath == null)
+        {
+            <form id="childContainerForm" action="/create/@ViewBag.Path" method="post">
+                <div class="mb-3">
+                    <label for="childContainerName" class="form-label">Add a child container:</label>
+                    <input type="text" class="form-control" id="childContainerName" name="name" placeholder="(📁 path-safe name of child container)">
+                </div>
+                <button type="submit" class="btn btn-primary">Create container</button>
+            </form>
+
+
+            <script type="text/javascript">
+
+                const childContainerForm = document.getElementById("childContainerForm");
+                childContainerForm.addEventListener("submit", function (ev) {
+                    ev.preventDefault();
+                    const slug = document.getElementById("childContainerName").value;
+                    if (encodeURIComponent(slug) != slug) {
+                        alert("slug must only contain characters that won't be URI-encoded");
+                    } else {
+                        childContainerForm.submit();
+                    }
+                });
+
+            </script>
+        }
+
+        @if (ViewBag.ArchivalGroupPath == null && Model.Type != "RepositoryRoot")
+        {
+            <!-- -->
+            <div class="alert alert-primary mt-4" role="alert">
+                <form id="newAgForm" action="/import/@ViewBag.Path/NEW-AG" method="get">
+                    <div class="mb-3">
+                        <label for="agName" class="form-label"><strong>Create a new Archival Group under @ViewBag.Path:</strong></label>
+                        <input type="text" class="form-control" id="agName" name="name" placeholder="(📦 Name of archival group)">
+                    </div>
+                    <div class="mb-3">
+                        <label for="agSlug" class="form-label">with path element (slug):</label>
+                        <input type="text" class="form-control" id="agSlug" name="slug" placeholder="(📦 path-safe slug of archival group)">
+                    </div>
+                    <button type="submit" id="btnAgSubmit" class="btn btn-primary">Select source files...</button>
+                </form>   
             </div>
-            <button type="submit" id="btnAgSubmit" class="btn btn-primary">Submit</button>
-        </form>      
         
-        <script type="text/javascript">
+            <script type="text/javascript">
 
-            const prefix = "/import/@(ViewBag.Path)/";
-            const agForm = document.getElementById("newAgForm");
-            agForm.addEventListener("submit", function (ev) {
-                ev.preventDefault();
-                const name = document.getElementById("agName").value;
-                agForm.action = prefix + name;
-                agForm.submit();
-            });
+                const prefix = "/import/@(ViewBag.Path)/";
+                const agForm = document.getElementById("newAgForm");
+                agForm.addEventListener("submit", function (ev) {
+                    ev.preventDefault();
+                    const slug = document.getElementById("agSlug").value;
+                    if (encodeURIComponent(slug) != slug) {
+                        alert("slug must only contain characters that won't be URI-encoded");
+                    } else {
+                        agForm.action = prefix + slug;
+                        agForm.submit();
+                    }
+                });
 
-        </script>
+            </script>
+        }
     }
-
 </div>
