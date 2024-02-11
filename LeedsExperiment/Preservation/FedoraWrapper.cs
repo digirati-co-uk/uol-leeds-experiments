@@ -133,6 +133,7 @@ public class FedoraWrapper : IFedora
             // so that the extra info goes on the initial POST and this little PATCH isn't required
             var patchReq = MakeHttpRequestMessage(response.Headers.Location!, HttpMethod.Patch)
                 .InTransaction(transaction);
+            // We give the AG this _additional_ type so that we can see that it's an AG when we get bulk child members back from .WithContainedDescriptions
             patchReq.AsInsertTypePatch("<http://purl.org/dc/dcmitype/Collection>");
             var patchResponse = await httpClient.SendAsync(patchReq);
             patchResponse.EnsureSuccessStatusCode();
@@ -208,6 +209,10 @@ public class FedoraWrapper : IFedora
 
     private async void EnsureChecksum(BinaryFile binaryFile)
     {
+        if(apiOptions.RequireDigestOnBinaryFile && string.IsNullOrWhiteSpace(binaryFile.Digest))
+        {
+            throw new InvalidOperationException($"Missing digest on incoming BinaryFile {binaryFile.Path}");
+        }
         string? expected;
         switch (binaryFile.StorageType)
         {
@@ -217,6 +222,8 @@ public class FedoraWrapper : IFedora
                 break;
             case StorageTypes.S3:
                 // TODO - get the SHA256 algorithm from AWS directly rather than compute it here
+                // If the S3 file does not already have the SHA-256 in metadata, then it's an error
+                // Our prep service
                 // GetObjectAttributesAsync
                 // Need to switch Fedora and OCFL to SHA256
                 // What does it mean if you switch the default algorithm in Fedora? It's used for OCFL...
@@ -260,7 +267,6 @@ public class FedoraWrapper : IFedora
 
     private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, BinaryFile binaryFile, Transaction? transaction = null)
     {
-        // FileInfo localFile, string originalName, string contentType, .. , string? checksum = null
         // verify that parent is a container first?
         EnsureChecksum(binaryFile);
         var fedoraLocation = GetFedoraUriWithinArchivalGroup(binaryFile.Parent, binaryFile.Path);
@@ -670,7 +676,7 @@ public class FedoraWrapper : IFedora
         archivalGroup.Versions = versions;
         archivalGroup.StorageMap = storageMap;
         archivalGroup.Version = versions.Single(v => v.OcflVersion == storageMap.Version.OcflVersion);
-        if(archivalGroup.Version == archivalGroup.StorageMap.HeadVersion)
+        if(archivalGroup.Version.Equals(archivalGroup.StorageMap.HeadVersion))
         {
             PopulateOrigins(storageMap, archivalGroup);
         }

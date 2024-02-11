@@ -136,6 +136,7 @@ public class ImportController : Controller
     {
         // What's the best way to diff?
         // This is very crude and can't spot a container being renamed
+
         var allExistingContainers = new List<ContainerDirectory>();
         var allExistingFiles = new List<BinaryFile>();
         TraverseContainers(archivalGroup, allExistingContainers, allExistingFiles, archivalGroup);
@@ -354,7 +355,13 @@ public class ImportController : Controller
                 // also see if it's application/x-directory
                 continue;
             }
-            // Future: We *require* that S3 source folders have sha256 hashes in their metadata
+
+            // S3 source folders either need SHA-256 hashes in their AWS metadata (preferred for package-building)
+            // or they are recorded in things like METS files - in a way that this code here can understand.
+
+            // Different applications have their own logic for storing hashes as part of the object, e.g., in METS.
+
+            // Unless coming from other information, we *require* that S3 source folders have sha256 hashes in their metadata
             // so we don't have to do this:
             var s3Stream = await s3Client!.GetObjectStreamAsync(obj.BucketName, obj.Key, null);
             var sha512Digest = Checksum.Sha512FromStream(s3Stream);

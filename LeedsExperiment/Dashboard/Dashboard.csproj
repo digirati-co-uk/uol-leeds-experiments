@@ -9,12 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="iiif-net" Version="0.2.5" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Dlcs\Dlcs.csproj" />
     <ProjectReference Include="..\Fedora\Fedora.csproj" />
     <ProjectReference Include="..\PreservationApiClient\PreservationApiClient.csproj" />
     <ProjectReference Include="..\Preservation\Preservation.csproj" />

@@ -1,0 +1,55 @@
+﻿@using Dashboard.Helpers
+@using Dlcs.Hydra
+@using Utils
+@model IIIFSyncModel
+
+<div>
+    <div class="alert alert-primary" role="alert">
+        <img class="float-right" width="60" src="https://avatars.githubusercontent.com/u/5812589?s=200&v=4" />
+        <h1 style="width:80%" class="display-4 float-left">📦 @Model.ArchivalGroup!.GetDisplayName()</h1>
+        <p class="clearfix"><a href="/browse/@ViewBag.Path">Browse</a></p>
+    </div>
+
+    <partial name="_CommonMetadata" model="Model.ArchivalGroup" />
+
+    <h2>IIIF Synchronisation</h2>
+
+    <form method="post" action="/iiif/@(ViewBag.Path)">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <input class="btn btn-primary form-control" type="submit" value="Synchronise">
+            </div>
+            <div class="col-auto"><a target="_blank" href="/manifest/@(ViewBag.Path)">View IIIF Manifest</a></div>
+        </div>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Path within object</th>
+                <th>IIIF status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var kvp in Model.ImageMap.OrderBy(kvp => kvp.Key).ToList())
+            {
+                <tr>
+                    <td>@kvp.Key</td>
+                    <td>
+                        @{
+                            if (kvp.Value == null)
+                            {
+                                <strong>Not Synced</strong>
+                            }
+                            else
+                            {
+                                <a href="https://portal.dlcs-trial.digirati.io/Images/@(kvp.Value.Space)/@(kvp.Value.ModelId)">IIIF Resource</a>
+                                <a href="https://portal.dlcs-trial.digirati.io/Images/@(kvp.Value.Space)/@(kvp.Value.ModelId)"><img style="max-height: 30px" src="@(kvp.Value.ImageService)/full/!100,100/0/default.jpg" /></a>                                
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

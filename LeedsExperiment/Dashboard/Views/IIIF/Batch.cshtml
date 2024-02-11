@@ -1,0 +1,19 @@
+﻿@using Dashboard.Helpers
+@using Dlcs.Hydra
+@using Utils
+@model IIIFSyncModel
+
+<div>
+    <div class="alert alert-primary" role="alert">
+        <img class="float-right" width="60" src="https://avatars.githubusercontent.com/u/5812589?s=200&v=4" />
+        <h1 style="width:80%" class="display-4 float-left">📦 @Model.ArchivalGroup!.GetDisplayName()</h1>
+        <p class="clearfix"><a href="/browse/@ViewBag.Path">Browse</a></p>
+    </div>
+
+    <partial name="_CommonMetadata" model="Model.ArchivalGroup" />
+
+    <h2>IIIF Synchronisation</h2>
+    
+    <p>Batch of @(Model.Batch!.Count) images submitted.</p>
+    <p ><a href="/iiif/@ViewBag.Path">Return to sync status</a></p>
+</div>
