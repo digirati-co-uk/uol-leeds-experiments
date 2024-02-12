@@ -3,7 +3,6 @@ using Dashboard.Models;
 using Dlcs;
 using Dlcs.Hydra;
 using Fedora.Abstractions;
-using Fedora.Abstractions.Transfer;
 using IIIF;
 using IIIF.ImageApi.V2;
 using IIIF.Presentation.V3;
@@ -19,14 +18,14 @@ namespace Dashboard.Controllers
 {
     public class IIIFController : Controller
     {
-        private readonly ILogger<OcflController> logger;
+        private readonly ILogger<IIIFController> logger;
         private readonly IPreservation preservation;
         private readonly IDlcs dlcs;
 
         public IIIFController(
             IPreservation preservation,
             IDlcs dlcs,
-            ILogger<OcflController> logger)
+            ILogger<IIIFController> logger)
         {
             this.preservation = preservation;
             this.logger = logger;
