@@ -3,7 +3,6 @@ using Dashboard.Models;
 using Dlcs;
 using Dlcs.Hydra;
 using Fedora.Abstractions;
-using IIIF;
 using IIIF.ImageApi.V2;
 using IIIF.Presentation.V3;
 using IIIF.Presentation.V3.Annotation;
@@ -92,7 +91,7 @@ namespace Dashboard.Controllers
                     imagesToRegister.Add(new Image()
                     {
                         ModelId = GetDlcsIdentifier(string2),
-                        Space = 2,
+                        Space = 3,
                         String1 = path,
                         String2 = string2,
                         Number1 = sequenceIndex,
