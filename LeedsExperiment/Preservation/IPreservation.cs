@@ -6,11 +6,11 @@ namespace Preservation;
 public interface IPreservation
 {
     // Getting things from Fedora
-    
+    // ==========================
+
     Task<Resource?> GetResource(string? path);
     string GetInternalPath(Uri preservationApiUri);
     Task<ArchivalGroup?> GetArchivalGroup(string path, string? version);
-
     Task<ResourceInfo> GetResourceInfo(string path);
 
 
@@ -39,6 +39,10 @@ public interface IPreservation
     /// <returns>A partially populated ImportJob</returns>
     Task<ImportJob> GetUpdateJob(string archivalGroupPath, string source);
 
+
+    // Making changes to Fedora/OCFL objects (all CRUD)
+    // ================================================
+
     /// <summary>
     /// "Execute" the update job obtrained above.
     /// There is an `isUpdate` flag on ImportJob that must be explicitly set to true if a new version is intended.
@@ -50,6 +54,9 @@ public interface IPreservation
     /// <param name="importJob"></param>
     /// <returns>A fully populated Job including the results</returns>    // 
     Task<ImportJob> Import(ImportJob importJob);
+
+    // Organising the repository above the Archival Group level
+    // ========================================================
 
     /// <summary>
     /// For creating containers outside of an archival group - or maybe even within one, later
