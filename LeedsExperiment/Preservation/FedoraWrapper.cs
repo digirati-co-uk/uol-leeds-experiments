@@ -218,7 +218,7 @@ public class FedoraWrapper : IFedora
         {
             case StorageTypes.FileSystem:
                 var fi = new FileInfo(binaryFile.ExternalLocation);
-                expected = Checksum.Sha512FromFile(fi);
+                expected = Checksum.Sha256FromFile(fi);
                 break;
             case StorageTypes.S3:
                 // TODO - get the SHA256 algorithm from AWS directly rather than compute it here
@@ -233,7 +233,7 @@ public class FedoraWrapper : IFedora
                 // This would be an efficient way of doing this - but with this naive implementation
                 // we're going to read the object twice
                 var s3Stream = await s3Client!.GetObjectStreamAsync(s3Uri.Bucket, s3Uri.Key, null);
-                expected = Checksum.Sha512FromStream(s3Stream);
+                expected = Checksum.Sha256FromStream(s3Stream);
                 // could get a byte array here and then pass it along eventually to MakeBinaryPutOrPost
                 // for now just read it twice.
                 // Later we'll get the sha256 checksum from metadata
@@ -321,7 +321,7 @@ public class FedoraWrapper : IFedora
     {
         var req = MakeHttpRequestMessage(location, httpMethod)
             .InTransaction(transaction)
-            .WithDigest(binaryFile.Digest, "sha-512"); // move algorithm choice to config
+            .WithDigest(binaryFile.Digest, "sha-256"); // move algorithm choice to constant
         if (httpMethod == HttpMethod.Post)
         {
             req.WithSlug(binaryFile.Slug);

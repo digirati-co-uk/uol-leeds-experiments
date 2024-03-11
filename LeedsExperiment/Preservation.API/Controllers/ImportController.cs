@@ -363,8 +363,10 @@ public class ImportController : Controller
 
             // Unless coming from other information, we *require* that S3 source folders have sha256 hashes in their metadata
             // so we don't have to do this:
+
+            // TODAY
             var s3Stream = await s3Client!.GetObjectStreamAsync(obj.BucketName, obj.Key, null);
-            var sha512Digest = Checksum.Sha512FromStream(s3Stream);
+            var sha256Digest = Checksum.Sha256FromStream(s3Stream);
             // (and all our Fedora objects have sha-256)
             // We can also do an eTag comparison for smaller files
             // We can also do a size comparison as a sanity check - this can't catch all changes obvs
@@ -384,7 +386,7 @@ public class ImportController : Controller
                 Path = sourcePath,
                 StorageType = StorageTypes.S3,
                 ExternalLocation = $"s3://{obj.BucketName}/{obj.Key}",
-                Digest = sha512Digest,
+                Digest = sha256Digest,
                 ContentType = GetDefaultContentType(nameAndParentPath.Name) // we may overwrite this later, e.g., from PREMIS data
             });
         }
