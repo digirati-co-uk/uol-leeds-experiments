@@ -340,6 +340,8 @@ public class FedoraWrapper : IFedora
                 break;
             case StorageTypes.S3:
                 // This should instead reference the file in S3, for Fedora to fetch
+                // https://fedora-project.slack.com/archives/C8B5TSR4J/p1710164226000799
+                // ^ not possible rn
                 var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
                 var s3Req = new GetObjectRequest() { BucketName = s3Uri.Bucket, Key = s3Uri.Key };
                 var ms = new MemoryStream();

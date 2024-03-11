@@ -2,6 +2,7 @@ using Fedora;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
+using Preservation;
 
 namespace SamplesWorker
 {
@@ -30,9 +31,11 @@ namespace SamplesWorker
                     var ag = await OcflV1();
                     var ag2 = await OcflV2(ag);
                     // Can't run 3 until tombstone issue resolved
-                    // var ag3 = await OcflV3(ag2);
-                    var altAg3 = await OcflV3Alt(ag2);
-                    var altAg4 = await OcflV4Alt(altAg3);
+                    var ag3 = await OcflV3(ag2);
+                    // And now it is!
+
+                    //var altAg3 = await OcflV3Alt(ag2);
+                    //var altAg4 = await OcflV4Alt(altAg3);
                     break;
 
                 case "ag":
@@ -93,6 +96,7 @@ namespace SamplesWorker
         {
             // This still seems a bit awkward to construct - paths
             var localFileInfo = new FileInfo(Path.Combine(localRootPath, pathWithinArchivalGroup.Replace('/', Path.DirectorySeparatorChar)));
+            var sha256 = Checksum.Sha256FromFile(localFileInfo);
             return new BinaryFile
             {
                 Parent = fedoraParent,
@@ -101,7 +105,8 @@ namespace SamplesWorker
                 ContentType = contentType,
                 FileName = localFileInfo.Name,
                 Name = localFileInfo.Name,
-                StorageType = StorageTypes.FileSystem
+                StorageType = StorageTypes.FileSystem,
+                Digest = sha256
             };
         }
 
@@ -114,8 +119,9 @@ namespace SamplesWorker
             Console.WriteLine("In transaction for v1 {0}", transaction.Location);
 
             var storageContainer = await fedora.GetObject<Container>("storage-01", transaction);
-            
-            var archivalGroup = await fedora.CreateArchivalGroup(storageContainer.Location, $"ocfl-expt-{Now()}", "ocflv1", transaction);
+
+            var name = $"ocfl-expt-{Now()}";
+            var archivalGroup = await fedora.CreateArchivalGroup(storageContainer.Location, name, name, transaction);
 
             // PUT the binary image.tiff
             var binaryFileTiff = MakeBinaryFileFromFileSystem(localPath, archivalGroup.Location, "image.tiff", "image/tiff");            
