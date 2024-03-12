@@ -5,6 +5,14 @@ namespace Preservation;
 
 public class AwsChecksum
 {
+    /// <summary>
+    /// Read the SHA256 Checksum from the S3 Object's metadata
+    /// We want to use hexadecimal representations so we convert from the base64 returned by AWS
+    /// </summary>
+    /// <param name="s3Client"></param>
+    /// <param name="bucket"></param>
+    /// <param name="key"></param>
+    /// <returns></returns>
     public static async Task<string?> GetHexChecksumAsync(IAmazonS3 s3Client, string bucket, string key)
     {
         var objAttrsRequest = new GetObjectAttributesRequest()
