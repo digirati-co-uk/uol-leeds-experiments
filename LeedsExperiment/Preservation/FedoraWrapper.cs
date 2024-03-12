@@ -207,48 +207,56 @@ public class FedoraWrapper : IFedora
         return await PutOrPostBinary(HttpMethod.Put, binaryFile, transaction);
     }
 
-    private async void EnsureChecksum(BinaryFile binaryFile)
+    private async void EnsureChecksum(BinaryFile binaryFile, bool validate)
     {
-        if(apiOptions.RequireDigestOnBinaryFile && string.IsNullOrWhiteSpace(binaryFile.Digest))
+        bool isMissing = string.IsNullOrWhiteSpace(binaryFile.Digest);
+        if (isMissing || validate)
         {
-            throw new InvalidOperationException($"Missing digest on incoming BinaryFile {binaryFile.Path}");
-        }
-        string? expected;
-        switch (binaryFile.StorageType)
-        {
-            case StorageTypes.FileSystem:
-                var fi = new FileInfo(binaryFile.ExternalLocation);
-                expected = Checksum.Sha256FromFile(fi);
-                break;
-            case StorageTypes.S3:
-                // TODO - get the SHA256 algorithm from AWS directly rather than compute it here
-                // If the S3 file does not already have the SHA-256 in metadata, then it's an error
-                // Our prep service
-                // GetObjectAttributesAsync
-                // Need to switch Fedora and OCFL to SHA256
-                // What does it mean if you switch the default algorithm in Fedora? It's used for OCFL...
+            string? expected = null;
+            switch (binaryFile.StorageType)
+            {
+                case StorageTypes.FileSystem:
+                    if (isMissing && apiOptions.RequireDigestOnBinaryFileInfo)
+                    {
+                        throw new InvalidOperationException($"Missing digest on incoming BinaryFile FileInfo {binaryFile.Path}");
+                    }
+                    var fi = new FileInfo(binaryFile.ExternalLocation);
+                    expected = Checksum.Sha256FromFile(fi);
+                    break;
+                case StorageTypes.S3:
+                    if (isMissing && apiOptions.RequireDigestOnBinaryS3)
+                    {
+                        throw new InvalidOperationException($"Missing digest on incoming BinaryFile in S3 {binaryFile.Path}");
+                    }
+                    var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
+                    // Get the SHA256 algorithm from AWS directly rather than compute it here
+                    // If the S3 file does not already have the SHA-256 in metadata, then it's an error
+                    expected = await AwsChecksum.GetHexChecksumAsync(s3Client, s3Uri.Bucket, s3Uri.Key);
+                    if (string.IsNullOrWhiteSpace(expected))
+                    {
+                        throw new InvalidOperationException($"S3 Key at {s3Uri} does not have SHA256 Checksum in its attributes");
+                    }
 
-                var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
-
-                // This would be an efficient way of doing this - but with this naive implementation
-                // we're going to read the object twice
-                var s3Stream = await s3Client!.GetObjectStreamAsync(s3Uri.Bucket, s3Uri.Key, null);
-                expected = Checksum.Sha256FromStream(s3Stream);
-                // could get a byte array here and then pass it along eventually to MakeBinaryPutOrPost
-                // for now just read it twice.
-                // Later we'll get the sha256 checksum from metadata
-                // Or the MD5 from eTag?
-                // BEWARE that multipart uploads will not have the MD5 as the eTag.
-                break;
-            default:
-                throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
+                    // This would be an efficient way of doing this - but with this naive implementation
+                    // we're going to read the object twice
+                    // var s3Stream = await s3Client!.GetObjectStreamAsync(s3Uri.Bucket, s3Uri.Key, null);
+                    // expected = Checksum.Sha256FromStream(s3Stream);
+                    // could get a byte array here and then pass it along eventually to MakeBinaryPutOrPost
+                    // for now just read it twice.
+                    // Later we'll get the sha256 checksum from metadata
+                    // Or the MD5 from eTag?
+                    // BEWARE that multipart uploads will not have the MD5 as the eTag.
+                    break;
+                default:
+                    throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
+            }
+            // validation
+            if (!string.IsNullOrWhiteSpace(binaryFile.Digest) && binaryFile.Digest != expected)
+            {
+                throw new InvalidOperationException("Initial checksum doesn't match");
+            }
+            binaryFile.Digest = expected;
         }
-
-        if (binaryFile.Digest != null && binaryFile.Digest != expected)
-        {
-            throw new InvalidOperationException("Initial checksum doesn't match");
-        }
-        binaryFile.Digest = expected;
     }
 
     private Uri GetFedoraUriWithinArchivalGroup(Uri archivalGroupUri, string path)
@@ -268,7 +276,7 @@ public class FedoraWrapper : IFedora
     private async Task<Binary> PutOrPostBinary(HttpMethod httpMethod, BinaryFile binaryFile, Transaction? transaction = null)
     {
         // verify that parent is a container first?
-        EnsureChecksum(binaryFile);
+        EnsureChecksum(binaryFile, false);
         var fedoraLocation = GetFedoraUriWithinArchivalGroup(binaryFile.Parent, binaryFile.Path);
         var req = await MakeBinaryPutOrPost(httpMethod, fedoraLocation, binaryFile, transaction);
         var response = await httpClient.SendAsync(req);

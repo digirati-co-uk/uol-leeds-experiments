@@ -329,16 +329,24 @@ public class ImportController : Controller
         // This will currently break if the source is not an s3 Uri to which we have access
         // but later could be a file path etc, a scratch upload location, whatever
         var s3Uri = new AmazonS3Uri(source);
-        // we assume this is the root. We also assume that we are not going to hit the AWS limit (1000?)
+
+        // FOR THIS DEMO we assume this is the root.
+        // We also assume that we are not going to hit the AWS limit for paging (1000?)
         // https://docs.aws.amazon.com/sdkfornet1/latest/apidocs/html/M_Amazon_S3_AmazonS3_ListObjects.htm
-        // ^^ for paging
         // We can't learn anything about containers this way other than that there are slugs in path
         // We can't learn anything about intended name (dc:title) from this, but that's OK for now
         // That kind of data should be in METS files; we can enhance the ImportJob with it later in a real world application
+        // The code that constructs the import job has access to more information than the code below.
+        // The files have been through a pipeline that will have produced checksums, content types and more, and put them in
+        // metadata such as METS that that code understands.
         var listObjectsReq = new ListObjectsV2Request()
         { 
             BucketName = s3Uri.Bucket,
-            Prefix = $"{s3Uri.Key.TrimEnd('/')}/" //,
+            Prefix = $"{s3Uri.Key.TrimEnd('/')}/"
+
+            // The only valid values here are RestoreStatus or null, so this is no good
+            // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/model/OptionalObjectAttributes.html
+            // OptionalObjectAttributes = [ObjectAttributes.Checksum] //,
             // OptionalObjectAttributes = ["Content-Type"] - need to work out how to get content type back here
             // https://stackoverflow.com/a/44179929
             // application/x-directory
@@ -356,18 +364,29 @@ public class ImportController : Controller
                 continue;
             }
 
+            // how do you get the checksum here without making a further call?
+
             // S3 source folders either need SHA-256 hashes in their AWS metadata (preferred for package-building)
             // or they are recorded in things like METS files - in a way that this code here can understand.
 
             // Different applications have their own logic for storing hashes as part of the object, e.g., in METS.
 
             // Unless coming from other information, we *require* that S3 source folders have sha256 hashes in their metadata
-            // so we don't have to do this:
+            // (how do we enforce that, we don't want to know about METS here)
 
-            // TODAY
-            var s3Stream = await s3Client!.GetObjectStreamAsync(obj.BucketName, obj.Key, null);
-            var sha256Digest = Checksum.Sha256FromStream(s3Stream);
-            // (and all our Fedora objects have sha-256)
+            // Get the SHA256 algorithm from AWS directly rather than compute it here
+            // If the S3 file does not already have the SHA-256 in metadata, then it's an error
+            string? sha256 = await AwsChecksum.GetHexChecksumAsync(s3Client, s3Uri.Bucket, obj.Key);
+            if (string.IsNullOrWhiteSpace(sha256))
+            {
+                throw new InvalidOperationException($"S3 Key at {obj.Key} does not have SHA256 Checksum in its attributes");
+            }
+                       
+
+            // so we don't have to do this:
+            // var s3Stream = await s3Client!.GetObjectStreamAsync(obj.BucketName, obj.Key, null);
+            // var sha256Digest = Checksum.Sha256FromStream(s3Stream);
+            
             // We can also do an eTag comparison for smaller files
             // We can also do a size comparison as a sanity check - this can't catch all changes obvs
             // but if source and current have same checksum but different sizes then something's up
@@ -386,7 +405,7 @@ public class ImportController : Controller
                 Path = sourcePath,
                 StorageType = StorageTypes.S3,
                 ExternalLocation = $"s3://{obj.BucketName}/{obj.Key}",
-                Digest = sha256Digest,
+                Digest = sha256,
                 ContentType = GetDefaultContentType(nameAndParentPath.Name) // we may overwrite this later, e.g., from PREMIS data
             });
         }
