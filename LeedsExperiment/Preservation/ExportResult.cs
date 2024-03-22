@@ -1,6 +1,4 @@
-﻿
-using Fedora.Abstractions.Transfer;
-using Fedora.Storage;
+﻿using Fedora.Storage;
 using System.Text.Json.Serialization;
 
 namespace Preservation;

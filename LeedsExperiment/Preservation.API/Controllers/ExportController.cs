@@ -8,27 +8,23 @@ namespace Preservation.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ExportController : Controller
+public class ExportController(
+    IStorageMapper storageMapper,
+    IFedora fedora,
+    IOptions<PreservationApiOptions> options,
+    IAmazonS3 awsS3Client)
+    : Controller
 {
-    private readonly IStorageMapper storageMapper;
-    private readonly IFedora fedora;
-    private readonly PreservationApiOptions options;
-    private IAmazonS3 s3Client;
+    private readonly PreservationApiOptions options = options.Value;
 
-    public ExportController(
-        IStorageMapper storageMapper,
-        IFedora fedora,
-        IOptions<PreservationApiOptions> options,
-        IAmazonS3 awsS3Client
-        )
-    {
-        this.storageMapper = storageMapper;
-        this.fedora = fedora;
-        this.options = options.Value;
-        this.s3Client = awsS3Client;
-    }
-
+    /// <summary>
+    /// Export Fedora item to S3, optionally specifying version
+    /// </summary>
+    /// <param name="path">Path of Fedora item to export</param>
+    /// <param name="version">Optional version to export</param>
+    /// <returns>JSON object representing output of </returns>
     [HttpGet("{*path}", Name = "Export")]
+    [Produces<ExportResult>]
     public async Task<ExportResult?> Index([FromRoute] string path, [FromQuery] string? version)
     {
         var agUri = fedora.GetUri(path);
@@ -48,7 +44,7 @@ public class ExportController : Controller
             {
                 var sourceKey = $"{storageMap.ObjectPath}/{file.Value.FullPath}";
                 var destKey = $"{exportKey}/{file.Key}";
-                var resp = await s3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket, destKey);
+                var resp = await awsS3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket, destKey);
                 result.Files.Add($"s3://{options.StagingBucket}/{destKey}");
             }
             result.End = DateTime.Now;
