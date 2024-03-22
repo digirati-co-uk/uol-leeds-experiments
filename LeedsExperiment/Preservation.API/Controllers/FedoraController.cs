@@ -15,8 +15,7 @@ namespace Preservation.API.Controllers
             this.fedora = fedora;
         }
 
-        [HttpGet(Name = "FedoraProxy")]
-        [Route("{contentTypeMajor}/{contentTypeMinor}/{*path}")]
+        [HttpGet("{contentTypeMajor}/{contentTypeMinor}/{*path}", Name = "FedoraProxy")]
         public async Task<IActionResult> Index(string contentTypeMajor, string contentTypeMinor, string? path)
         {
             string? jsonld = Request.Query["jsonld"];

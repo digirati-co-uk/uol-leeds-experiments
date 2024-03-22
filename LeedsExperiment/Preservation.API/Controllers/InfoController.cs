@@ -16,8 +16,7 @@ namespace Preservation.API.Controllers
         }
 
 
-        [HttpGet(Name = "GetInfo")]
-        [Route("{*path}", Order = 1)]
+        [HttpGet("{*path}", Name = "GetInfo", Order = 1)]
         public async Task<ActionResult<ResourceInfo?>> Info(
         [FromRoute] string path)
         {

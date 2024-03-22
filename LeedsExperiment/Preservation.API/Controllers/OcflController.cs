@@ -17,8 +17,7 @@ namespace Preservation.API.Controllers
             this.fedora = fedora;
         }
 
-        [HttpGet(Name = "Inventory")]
-        [Route("{*path}")]
+        [HttpGet("{*path}", Name = "Inventory")]
         public async Task<Inventory?> Index(string path)
         {
             var uri = fedora.GetUri(path);

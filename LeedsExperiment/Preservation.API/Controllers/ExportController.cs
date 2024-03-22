@@ -28,8 +28,7 @@ public class ExportController : Controller
         this.s3Client = awsS3Client;
     }
 
-    [HttpGet(Name = "Export")]
-    [Route("{*path}")]
+    [HttpGet("{*path}", Name = "Export")]
     public async Task<ExportResult?> Index([FromRoute] string path, [FromQuery] string? version)
     {
         var agUri = fedora.GetUri(path);

@@ -38,10 +38,7 @@ public class ImportController : Controller
         this.logger = logger;
     }
 
-    
-
-    [HttpGet(Name = "ImportJob")]
-    [Route("{*archivalGroupPath}")]
+    [HttpGet("{*archivalGroupPath}", Name = "ImportJob")]
     public async Task<ImportJob?> GetImportJob([FromRoute] string archivalGroupPath, [FromQuery] string source)
     {
         var agUri = fedora.GetUri(archivalGroupPath);
@@ -204,8 +201,7 @@ public class ImportController : Controller
         }
     }
 
-    [HttpPost(Name = "ExecuteImport")]
-    [Route("__import")]
+    [HttpPost("__import", Name = "ExecuteImport")]
     public async Task<ImportJob?> ExecuteImportJob([FromBody] ImportJob importJob)
     {
         logger.LogInformation("Executing import job {path}", importJob.ArchivalGroupPath);
