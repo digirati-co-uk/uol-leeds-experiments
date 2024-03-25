@@ -194,7 +194,8 @@ public class FedoraWrapper : IFedora
 
     public Uri GetUri(string path)
     {
-        return new Uri(httpClient.BaseAddress!, path);
+        // Unescape path, handles 'my%2fpath' and 'my/path' (requests submitted via Swagger produce former)
+        return new Uri(httpClient.BaseAddress!, Uri.UnescapeDataString(path));
     }
 
     private void AddType(Uri uri, string type, Transaction? transaction)
