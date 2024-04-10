@@ -17,8 +17,9 @@ builder.Services.AddSwaggerGen(opts =>
     opts.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "UoL Demo Preservation API",
-        Version = "v1",
-        Description = "Wrapper around Fedora's API."
+        Version = "v0.1",
+        Description =
+            "Wrapper around Fedora API. For demo/test purposes only, focussed on 'happy path' (minimal error handling etc)."
     });
     
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

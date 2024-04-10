@@ -3,57 +3,61 @@ using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Preservation.API.Controllers
+namespace Preservation.API.Controllers;
+
+[Route("api/repository/{*path}")]
+[ApiController]
+public class RepositoryController(IFedora fedora) : Controller
 {
-    [Route("api/repository/{*path}")]
-    [ApiController]
-    public class RepositoryController : Controller
+    /// <summary>
+    /// Get JSON representation of item at path.
+    /// </summary>
+    /// <param name="path">Path to item in Fedora (e.g. path/to/item). Optional</param>
+    /// <returns><see cref="Resource"/> representing item at path</returns>
+    [HttpGet]
+    [Produces<Resource>]
+    [Produces("application/json")]
+    public async Task<ActionResult<Resource?>> Index([FromRoute] string? path = null)
     {
-        private readonly IFedora fedora;
-
-        public RepositoryController(IFedora fedora)
+        Resource? resource;
+        if (string.IsNullOrEmpty(path))
         {
-            this.fedora = fedora;
+            resource = await fedora.GetRepositoryRoot();
         }
-
-        [HttpGet]
-        public async Task<ActionResult<Resource?>> Index(
-            [FromRoute] string? path = null)
+        else
         {
-            Resource? resource;
-            if (string.IsNullOrEmpty(path))
+            if (path.EndsWith("/"))
             {
-                resource = await fedora.GetRepositoryRoot();
+                var fullPathString = Request.Path.ToString().TrimEnd('/');
+                return Redirect(fullPathString);
             }
-            else
-            {
-                if (path.EndsWith("/"))
-                {
-                    var fullPathString = Request.Path.ToString().TrimEnd('/');
-                    return Redirect(fullPathString);
-                }
-                resource = await fedora.GetObject(path);
-            }
-            return resource;
+            resource = await fedora.GetObject(path);
         }
-
-        [HttpPut]
-        public async Task<ActionResult<Container?>> CreateContainer(
-            [FromRoute] string path)
-        {
-            // DANGER - this needs to do the same kinds of checks at the Fedora level that the Dashboard is doing
-            // This currently should only be used to create a container (not a binary) and only outside of an archival group.
-
-            var npp = new NameAndParentPath(path);
-            var cd = new ContainerDirectory() { 
-                Name = npp.Name, 
-                Parent = fedora.GetUri(npp.ParentPath ?? string.Empty), 
-                Path = npp.Name 
-            };
-
-            var newContainer = await fedora.CreateContainer(cd);
-            return newContainer;
-        }
-
+        return resource;
     }
+
+    /// <summary>
+    /// Create a new "Container" in Fedora at specified path
+    ///  
+    /// DANGER - this does not have same kinds of checks at the Fedora level that the Dashboard is doing
+    /// This currently should only be used to create a container (not a binary) and only outside of an archival group.
+    /// </summary>
+    /// <param name="path">Path of new Container to create in Fedora (e.g. path/to/item)</param>
+    /// <returns>Newly created <see cref="Container"/></returns>
+    [HttpPut]
+    [Produces<Container>]
+    [Produces("application/json")]
+    public async Task<ActionResult<Container?>> CreateContainer([FromRoute] string path)
+    {
+        var npp = new NameAndParentPath(path);
+        var cd = new ContainerDirectory() { 
+            Name = npp.Name, 
+            Parent = fedora.GetUri(npp.ParentPath ?? string.Empty), 
+            Path = npp.Name 
+        };
+
+        var newContainer = await fedora.CreateContainer(cd);
+        return newContainer;
+    }
+
 }

@@ -18,7 +18,7 @@ public class ExportController(
     private readonly PreservationApiOptions options = options.Value;
 
     /// <summary>
-    /// Export Fedora item to S3, optionally specifying version
+    /// Export Fedora item to S3, optionally specifying version. Item is exported to configured staging bucket. 
     /// </summary>
     /// <param name="path">Path of Fedora item to export (e.g. path/to/item)</param>
     /// <param name="version">Optional version to export (e.g. v1, v2 etc). Latest version returned if not specified</param>
