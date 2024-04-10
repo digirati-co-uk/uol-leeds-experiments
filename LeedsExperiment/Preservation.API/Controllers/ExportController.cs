@@ -20,11 +20,12 @@ public class ExportController(
     /// <summary>
     /// Export Fedora item to S3, optionally specifying version
     /// </summary>
-    /// <param name="path">Path of Fedora item to export</param>
-    /// <param name="version">Optional version to export</param>
-    /// <returns>JSON object representing output of </returns>
+    /// <param name="path">Path of Fedora item to export (e.g. path/to/item)</param>
+    /// <param name="version">Optional version to export (e.g. v1, v2 etc). Latest version returned if not specified</param>
+    /// <returns>JSON object representing result of export operation</returns>
     [HttpGet("{*path}", Name = "Export")]
     [Produces<ExportResult>]
+    [Produces("application/json")]
     public async Task<ExportResult?> Index([FromRoute] string path, [FromQuery] string? version)
     {
         var agUri = fedora.GetUri(path);
