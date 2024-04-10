@@ -9,6 +9,8 @@ namespace Preservation.API.Controllers;
 public class FedoraController(IFedora fedora) : Controller
 {
     /// <summary>
+    /// NOTE: This is for ease of browsing/familiarity only - NOT for application interactions.
+    /// 
     /// Wrapper around Fedora API for ease of use. Accepts headers passed in URL to make conneg simpler in browser.
     /// 
     /// Supported contentTypes are: application/ld+json, application/n-triples, application/rdf+xml,
