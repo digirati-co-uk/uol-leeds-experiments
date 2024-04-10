@@ -8,7 +8,6 @@ using Fedora.ApiModel;
 using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.Options;
 
 namespace Preservation.API.Controllers;
 
@@ -16,32 +15,31 @@ namespace Preservation.API.Controllers;
 [ApiController]
 public class ImportController : Controller
 {
-    private readonly IStorageMapper storageMapper;
     private readonly IFedora fedora;
-    private readonly PreservationApiOptions options;
     private IAmazonS3 s3Client;
     private FileExtensionContentTypeProvider contentTypeProvider = new FileExtensionContentTypeProvider();
     private ILogger<ImportController> logger;
 
     public ImportController(
-        IStorageMapper storageMapper,
         IFedora fedora,
-        IOptions<PreservationApiOptions> options,
         IAmazonS3 awsS3Client,
         ILogger<ImportController> logger
     )
     {
-        this.storageMapper = storageMapper;
         this.fedora = fedora;
-        this.options = options.Value;
         this.s3Client = awsS3Client;
         this.logger = logger;
     }
 
-    
-
-    [HttpGet(Name = "ImportJob")]
-    [Route("{*archivalGroupPath}")]
+    /// <summary>
+    /// Build an 'importJob' payload for an existing archival group by comparing it to files hosted at 'source'.
+    /// </summary>
+    /// <param name="archivalGroupPath">Path to item in Fedora (e.g. path/to/item)</param>
+    /// <param name="source">S3 URI containing items to create diff from (e.g. s3://uol-expts-staging-01/ocfl-example)</param>
+    /// <returns>Import job JSON payload</returns>
+    [HttpGet("{*archivalGroupPath}", Name = "ImportJob")]
+    [Produces<ImportJob>]
+    [Produces("application/json")]
     public async Task<ImportJob?> GetImportJob([FromRoute] string archivalGroupPath, [FromQuery] string source)
     {
         var agUri = fedora.GetUri(archivalGroupPath);
@@ -204,8 +202,47 @@ public class ImportController : Controller
         }
     }
 
-    [HttpPost(Name = "ExecuteImport")]
-    [Route("__import")]
+    /// <summary>
+    /// Make changes to Fedora as outlined in importJob payload.
+    ///
+    /// See GET /api/import for endpoint to help generate payload. 
+    /// </summary>
+    /// <param name="importJob">JSON payload containing details of changes to make</param>
+    /// <returns>Processed <see cref="ImportJob"/></returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST: /api/__import
+    ///     {
+    ///         "archivalGroupPath": "Example",
+    ///         "source": "s3://uol-expts-staging-01/ocfl-example",
+    ///         "storageType": "S3",
+    ///         "archivalGroupUri": "https://uol.digirati.io/fcrepo/rest/Example",
+    ///         "archivalGroupName": null,
+    ///         "diffStart": "2024-04-10T16:49:58.038852+01:00",
+    ///         "diffEnd": "2024-04-10T16:50:10.1859735+01:00",
+    ///         "diffVersion": null,
+    ///         "containersToAdd": [{
+    ///             "path": "foo",
+    ///             "parent": "https://uol.digirati.io/fcrepo/rest/Example"
+    ///             "name": "foo",
+    ///             "slug": "foo"
+    ///         }],
+    ///         "filesToAdd": [],
+    ///         "filesToDelete": [],
+    ///         "filesToPatch": [],
+    ///         "containersToDelete": [],
+    ///         "containersAdded": [],
+    ///         "filesAdded": [],
+    ///         "filesDeleted": [],
+    ///         "filesPatched": [],
+    ///         "containersDeleted": [],
+    ///         "isUpdate": false
+    ///     }
+    /// </remarks>
+    [HttpPost("__import", Name = "ExecuteImport")]
+    [Produces<ImportJob>]
+    [Produces("application/json")]
     public async Task<ImportJob?> ExecuteImportJob([FromBody] ImportJob importJob)
     {
         logger.LogInformation("Executing import job {path}", importJob.ArchivalGroupPath);

@@ -2,6 +2,8 @@ using Amazon.S3;
 using Fedora;
 using Preservation;
 using System.Net.Http.Headers;
+using System.Reflection;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +12,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(opts =>
+{
+    opts.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "UoL Demo Preservation API",
+        Version = "v0.1",
+        Description =
+            "Wrapper around Fedora API. For demo/test purposes only, focussed on 'happy path' (minimal error handling etc)."
+    });
+    
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    opts.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
 
 var fedoraAwsOptions = builder.Configuration.GetAWSOptions("Fedora-AWS");
 builder.Services.AddDefaultAWSOptions(fedoraAwsOptions);
@@ -37,11 +51,8 @@ builder.Services.AddHttpClient<IFedora, FedoraWrapper>(client =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 //app.UseHttpsRedirection();
 

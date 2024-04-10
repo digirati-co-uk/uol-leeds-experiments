@@ -8,28 +8,24 @@ namespace Preservation.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ExportController : Controller
+public class ExportController(
+    IStorageMapper storageMapper,
+    IFedora fedora,
+    IOptions<PreservationApiOptions> options,
+    IAmazonS3 awsS3Client)
+    : Controller
 {
-    private readonly IStorageMapper storageMapper;
-    private readonly IFedora fedora;
-    private readonly PreservationApiOptions options;
-    private IAmazonS3 s3Client;
+    private readonly PreservationApiOptions options = options.Value;
 
-    public ExportController(
-        IStorageMapper storageMapper,
-        IFedora fedora,
-        IOptions<PreservationApiOptions> options,
-        IAmazonS3 awsS3Client
-        )
-    {
-        this.storageMapper = storageMapper;
-        this.fedora = fedora;
-        this.options = options.Value;
-        this.s3Client = awsS3Client;
-    }
-
-    [HttpGet(Name = "Export")]
-    [Route("{*path}")]
+    /// <summary>
+    /// Export Fedora item to S3, optionally specifying version. Item is exported to configured staging bucket. 
+    /// </summary>
+    /// <param name="path">Path of Fedora item to export (e.g. path/to/item)</param>
+    /// <param name="version">Optional version to export (e.g. v1, v2 etc). Latest version returned if not specified</param>
+    /// <returns>JSON object representing result of export operation</returns>
+    [HttpGet("{*path}", Name = "Export")]
+    [Produces<ExportResult>]
+    [Produces("application/json")]
     public async Task<ExportResult?> Index([FromRoute] string path, [FromQuery] string? version)
     {
         var agUri = fedora.GetUri(path);
@@ -49,7 +45,7 @@ public class ExportController : Controller
             {
                 var sourceKey = $"{storageMap.ObjectPath}/{file.Value.FullPath}";
                 var destKey = $"{exportKey}/{file.Key}";
-                var resp = await s3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket, destKey);
+                var resp = await awsS3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket, destKey);
                 result.Files.Add($"s3://{options.StagingBucket}/{destKey}");
             }
             result.End = DateTime.Now;

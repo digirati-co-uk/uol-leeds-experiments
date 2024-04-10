@@ -1,17 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Preservation.API.Controllers
+namespace Preservation.API.Controllers;
+
+[Route("")]
+[ApiController]
+public class ValuesController : ControllerBase
 {
-    [Route("")]
-    [ApiController]
-    public class ValuesController : ControllerBase
-    {
-
-        [HttpGet]
-        public string Get()
-        {
-            return "I'm alive";
-        }
-    }
+    /// <summary>
+    /// Ignore - health-check endpoint
+    /// </summary>
+    [HttpGet]
+    [Produces<string>]
+    [Produces("application/json")]
+    public string Get() => "I'm alive";
 }
