@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen(opts =>
 {
     opts.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "UoL Demo Preservation API",
+        Title = "UoL Demo Storage API",
         Version = "v0.1",
         Description =
             "Wrapper around Fedora API. For demo/test purposes only, focussed on 'happy path' (minimal error handling etc)."
