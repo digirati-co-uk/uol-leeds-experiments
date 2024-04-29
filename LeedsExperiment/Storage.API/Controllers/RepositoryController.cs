@@ -2,8 +2,9 @@
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Microsoft.AspNetCore.Mvc;
+using Preservation;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("api/repository/{*path}")]
 [ApiController]

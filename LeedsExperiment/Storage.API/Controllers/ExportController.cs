@@ -3,19 +3,20 @@ using Fedora;
 using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Preservation;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 public class ExportController(
     IStorageMapper storageMapper,
     IFedora fedora,
-    IOptions<PreservationApiOptions> options,
+    IOptions<StorageApiOptions> options,
     IAmazonS3 awsS3Client)
     : Controller
 {
-    private readonly PreservationApiOptions options = options.Value;
+    private readonly StorageApiOptions options = options.Value;
 
     /// <summary>
     /// Export Fedora item to S3, optionally specifying version. Item is exported to configured staging bucket. 

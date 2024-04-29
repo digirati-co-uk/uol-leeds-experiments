@@ -1,6 +1,6 @@
 ﻿namespace Preservation;
 
-public class PreservationApiOptions
+public class StorageApiOptions
 {
     public required string Prefix { get; set; }
     public required string StagingBucket { get; set; }

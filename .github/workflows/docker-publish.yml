@@ -13,8 +13,8 @@ jobs:
       - uses: ./.github/actions/docker-build-and-push
         name: build and push
         with:
-          image-name: "preservation-api"
-          dockerfile: "./LeedsExperiment/Preservation.API/Dockerfile"
+          image-name: "Preservation-API"
+          dockerfile: "./LeedsExperiment/Storage.API/Dockerfile"
           context: "./LeedsExperiment/"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

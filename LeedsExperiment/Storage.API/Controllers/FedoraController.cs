@@ -2,7 +2,7 @@
 using Fedora.Vocab;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [ApiController]
 [Route("api/fedora")]

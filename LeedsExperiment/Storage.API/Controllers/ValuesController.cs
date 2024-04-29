@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("")]
 [ApiController]

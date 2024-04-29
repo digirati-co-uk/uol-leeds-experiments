@@ -9,17 +9,17 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Preservation.API/Preservation.API.csproj", "Preservation.API/"]
-RUN dotnet restore "./Preservation.API/./Preservation.API.csproj"
+COPY ["Storage.API/Storage.API.csproj", "Storage.API/"]
+RUN dotnet restore "./Storage.API/./Storage.API.csproj"
 COPY . .
-WORKDIR "/src/Preservation.API"
-RUN dotnet build "./Preservation.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Storage.API"
+RUN dotnet build "./Storage.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Preservation.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./Storage.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Preservation.API.dll"]
+ENTRYPOINT ["dotnet", "Storage.API.dll"]

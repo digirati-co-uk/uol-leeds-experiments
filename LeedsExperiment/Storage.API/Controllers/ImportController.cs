@@ -8,8 +8,9 @@ using Fedora.ApiModel;
 using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using Preservation;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

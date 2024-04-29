@@ -21,7 +21,7 @@ public class FedoraWrapper : IFedora
 {
     private readonly HttpClient httpClient;
     private readonly IStorageMapper storageMapper;
-    private readonly PreservationApiOptions apiOptions;
+    private readonly StorageApiOptions apiOptions;
     private readonly Uri apiUri;
     private readonly IMemoryCache cache;
     private readonly int fedoraRootSegmentsLength;
@@ -31,7 +31,7 @@ public class FedoraWrapper : IFedora
     public FedoraWrapper(
         HttpClient httpClient,
         IStorageMapper storageMapper,
-        IOptions<PreservationApiOptions> preservationApiOptions,
+        IOptions<StorageApiOptions> preservationApiOptions,
         IMemoryCache memoryCache,
         IAmazonS3 s3Client)
     {

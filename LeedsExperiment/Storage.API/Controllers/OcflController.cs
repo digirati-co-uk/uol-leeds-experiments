@@ -2,7 +2,7 @@
 using Fedora.Storage.Ocfl;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
