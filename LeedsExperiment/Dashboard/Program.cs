@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // https://learn.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests
-builder.Services.AddHttpClient<IPreservation, PreservationService>(client =>
+builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseAddress"]!);
     client.DefaultRequestHeaders.Add("Accept", "application/json");

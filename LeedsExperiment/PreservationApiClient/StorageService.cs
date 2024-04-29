@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace PreservationApiClient;
 
-public class PreservationService : IPreservation
+public class StorageService : IPreservation
 {
     private readonly HttpClient _httpClient;
 
@@ -16,7 +16,7 @@ public class PreservationService : IPreservation
     private const string exportPrefix = "api/export/";
     private const string importPrefix = "api/import/";
 
-    public PreservationService(HttpClient httpClient)
+    public StorageService(HttpClient httpClient)
     {
         _httpClient = httpClient;
     }

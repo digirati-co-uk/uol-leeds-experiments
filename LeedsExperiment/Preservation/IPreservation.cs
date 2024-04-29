@@ -44,7 +44,7 @@ public interface IPreservation
     // ================================================
 
     /// <summary>
-    /// "Execute" the update job obtrained above.
+    /// "Execute" the update job obtained above.
     /// There is an `isUpdate` flag on ImportJob that must be explicitly set to true if a new version is intended.
     /// (to avoid unexpected overwrites).
     /// 
