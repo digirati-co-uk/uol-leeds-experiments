@@ -4,6 +4,10 @@ namespace Fedora.ApiModel
 {
     public class BinaryMetadataResponse : FedoraJsonLdResponse
     {
+        /// <summary>
+        /// This property is present at ebucore:filename in Fedora RDF.
+        /// It is present if you gave the binary a content disposition header to set the file name
+        /// </summary>
         [JsonPropertyName("filename")]
         [JsonPropertyOrder(201)]
         public string? FileName { get; set; }

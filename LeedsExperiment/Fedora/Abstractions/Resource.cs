@@ -21,8 +21,13 @@ public abstract class Resource
 
     [JsonPropertyName("@id")]
     [JsonPropertyOrder(1)]
-    // The URI for this API
+    // The URI for this Storage API (accessible to API consumers)
     public Uri? PreservationApiUri { get; set; }
+
+    [JsonPropertyName("id")]
+    [JsonPropertyOrder(12)]
+    // The URI in Fedora (not accessible to API consumers)
+    public Uri? Location { get; set; }
 
     [JsonPropertyName("type")]
     [JsonPropertyOrder(1)]
@@ -39,10 +44,6 @@ public abstract class Resource
     // Use dc:title on the fedora resource
     public string? Name { get; set; }
 
-    [JsonPropertyName("id")]
-    [JsonPropertyOrder(12)]
-    // The Fedora identifier
-    public Uri? Location { get; set; }
 
     [JsonPropertyName("objectPath")]
     [JsonPropertyOrder(12)]

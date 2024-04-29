@@ -103,7 +103,7 @@ namespace SamplesWorker
                 ExternalLocation = localFileInfo.FullName,
                 Path = pathWithinArchivalGroup,
                 ContentType = contentType,
-                FileName = localFileInfo.Name,
+                // FileName = localFileInfo.Name,
                 Name = localFileInfo.Name,
                 StorageType = StorageTypes.FileSystem,
                 Digest = sha256

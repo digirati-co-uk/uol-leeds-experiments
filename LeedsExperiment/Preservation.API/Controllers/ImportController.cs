@@ -196,7 +196,7 @@ public class ImportController : Controller
                 ContentType = binary.ContentType ?? string.Empty,
                 StorageType = StorageTypes.S3, // shouldn't have to hard code that here, but Binary doesn't have that prop
                 Digest = binary.Digest,
-                FileName = binary.FileName!,
+                // FileName = binary.FileName!,
                 ExternalLocation = binary.Origin ?? string.Empty // we won't use this because it's the destination                
             });
         }
@@ -437,7 +437,7 @@ public class ImportController : Controller
             importSource.Files.Add(new BinaryFile
             {
                 Name = nameAndParentPath.Name,
-                FileName = nameAndParentPath.Name,
+                // FileName = nameAndParentPath.Name,
                 Parent = intendedParent,
                 Path = sourcePath,
                 StorageType = StorageTypes.S3,

@@ -20,8 +20,13 @@ public class Binary : Resource
         }
     }
 
-    [JsonPropertyName("filename")]
-    [JsonPropertyOrder(21)]
+    /// <summary>
+    /// The ebucore:filename triple in Fedora.
+    /// This is here for visibility, but we will not use it in the Storage API - use Name to hold original file name.
+    /// 
+    /// We could validate that it's always the same as Name
+    /// </summary>
+    [JsonIgnore]
     public string? FileName { get; set; }
 
     [JsonPropertyName("contentType")]

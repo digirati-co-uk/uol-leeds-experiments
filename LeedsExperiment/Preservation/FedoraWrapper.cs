@@ -350,7 +350,7 @@ public class FedoraWrapper : IFedora
             case StorageTypes.S3:
                 // This should instead reference the file in S3, for Fedora to fetch
                 // https://fedora-project.slack.com/archives/C8B5TSR4J/p1710164226000799
-                // ^ not possible rn
+                // ^ not possible rn - but can use a signed HTTP url to fetch! (TODO)
                 var s3Uri = new AmazonS3Uri(binaryFile.ExternalLocation);
                 var s3Req = new GetObjectRequest() { BucketName = s3Uri.Bucket, Key = s3Uri.Key };
                 var ms = new MemoryStream();
@@ -362,7 +362,9 @@ public class FedoraWrapper : IFedora
             default:
                 throw new InvalidOperationException("Unkown storage type " + binaryFile.StorageType);
         }
-        req.Content.WithContentDisposition(binaryFile.FileName);
+        // req.Content.WithContentDisposition(binaryFile.FileName); // no longer use this property...
+        // ...but still set the content disposition to give the file within Fedora an ebucore:filename triple:
+        req.Content.WithContentDisposition(binaryFile.Name);
         return req;
     }
 

@@ -22,10 +22,12 @@ public class BinaryFile : ResourceWithParentUri
     /// <summary>
     /// The Original / actual name of the file, rather than the path-safe, reduced character set slug.
     /// Goes into Fedora as Content-Disposition
+    /// 
+    /// Going to remove this from the class that represents a file for transfer, because we only want to think about Name
     /// </summary>
-    [JsonPropertyName("fileName")]
-    [JsonPropertyOrder(13)]
-    public required string FileName { get; set; }
+    //[JsonPropertyName("fileName")]
+    //[JsonPropertyOrder(13)]
+    //public required string FileName { get; set; }
 
     // NB ^^^ for a filename like readme.txt, Slug, Name and FileName will all be the same.
     // And in practice, Name and FileName are going ot be the same
