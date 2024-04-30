@@ -17,16 +17,16 @@ public abstract class PreservationResource
     [JsonPropertyOrder(2)]
     public abstract string Type { get; set; }
     
-    [JsonPropertyOrder(97)]
+    [JsonPropertyOrder(3)]
     public DateTime Created { get; set; }
     
-    [JsonPropertyOrder(98)]
+    [JsonPropertyOrder(4)]
     public Uri CreatedBy { get; set; }
     
-    [JsonPropertyOrder(99)]
+    [JsonPropertyOrder(5)]
     public DateTime? LastModified { get; set; }
     
-    [JsonPropertyOrder(100)]
+    [JsonPropertyOrder(6)]
     public Uri? LastModifiedBy { get; set; }
 }
 
@@ -46,7 +46,7 @@ public class DigitalObject : PreservationResource
     /// <summary>
     /// Name of this <see cref="DigitalObject"/>
     /// </summary>
-    [JsonPropertyOrder(3)]
+    [JsonPropertyOrder(9)]
     public string? Name { get; set; }
     
     /// <summary>
@@ -110,7 +110,7 @@ public class Container : PreservationResource
     /// The original name, which may contain any UTF-8 character. Often this will be the same as the last path element
     /// of the @id, but it does not have to be.
     /// </summary>
-    [JsonPropertyOrder(2)]
+    [JsonPropertyOrder(9)]
     public string? Name { get; set; }
     
     /// <summary>
@@ -145,7 +145,7 @@ public class Binary : PreservationResource
     /// <summary>
     /// The original name, which may contain any UTF-8 character.
     /// </summary>
-    [JsonPropertyOrder(3)]
+    [JsonPropertyOrder(9)]
     public string? Name { get; set; }
     
     /// <summary>
