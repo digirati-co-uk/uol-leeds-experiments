@@ -51,11 +51,11 @@ public class StorageService : IPreservation
                 {
                     case "Container":
                     case "RepositoryRoot":
-                        return JsonSerializer.Deserialize<Container>(jDoc.RootElement);
+                        return jDoc.RootElement.Deserialize<Container>();
                     case "Binary":
-                        return JsonSerializer.Deserialize<Binary>(jDoc.RootElement);
+                        return jDoc.RootElement.Deserialize<Binary>();
                     case "ArchivalGroup":
-                        return JsonSerializer.Deserialize<ArchivalGroup>(jDoc.RootElement);
+                        return jDoc.RootElement.Deserialize<ArchivalGroup>();
                     default:
                         return null;
                 }

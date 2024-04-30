@@ -1,12 +1,31 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Preservation;
+using PreservationApiClient;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
+builder.Services.AddHttpLogging(o => { });
+
+builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["StorageApiBaseAddress"]!);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
+// TODO - swagger
+
 var app = builder.Build();
 
-// Repository (Container, DigitalObject, Binary)
-app.MapGet("/repository/{*path}",
-    (string path, [FromRoute] string? version = null) =>
-        $"Retrieve Container/DigitalObject/Binary at {path}, version {version ?? "v-default"}");
+app.MapGet("/ping", () => "pong");
 
 // Is this required?
 app.MapPost("/repository/{*path}",
@@ -21,4 +40,7 @@ app.MapGet("/deposits/{id}", (string id) => $"Get details of Deposit {id}");
 app.MapGet("/deposits/{id}/importJobs/diff", (string id) => $"Get importJob JSON for files in Deposit {id}");
 app.MapPost("/deposits/{id}/importJobs", (string id) => "Import data into Fedora");
 
+app.UseHttpsRedirection();
+app.MapControllers();
+app.UseHttpLogging();
 app.Run();

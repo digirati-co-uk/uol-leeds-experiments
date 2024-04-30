@@ -6,4 +6,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\PreservationApiClient\PreservationApiClient.csproj" />
+      <ProjectReference Include="..\Preservation\Preservation.csproj" />
+    </ItemGroup>
+
 </Project>
