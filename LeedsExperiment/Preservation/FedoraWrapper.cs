@@ -159,7 +159,7 @@ public class FedoraWrapper : IFedora
             return new ArchivalGroup(containerResponse) 
             { 
                 ObjectPath = GetObjectPath(containerResponse.Id),
-                PreservationApiUri = GetApiUri(containerResponse.Id)
+                StorageApiUri = GetApiUri(containerResponse.Id)
             };
         }
         else
@@ -167,7 +167,7 @@ public class FedoraWrapper : IFedora
             return new Container(containerResponse)
             {
                 ObjectPath = GetObjectPath(containerResponse.Id),
-                PreservationApiUri = GetApiUri(containerResponse.Id)
+                StorageApiUri = GetApiUri(containerResponse.Id)
             };
         }
     }
@@ -177,7 +177,7 @@ public class FedoraWrapper : IFedora
         return new Binary(binaryResponse)
         {
             ObjectPath = GetObjectPath(binaryResponse.Id),
-            PreservationApiUri = GetApiUri(binaryResponse.Id)
+            StorageApiUri = GetApiUri(binaryResponse.Id)
         };
     }
 
@@ -902,7 +902,7 @@ public class FedoraWrapper : IFedora
                         container = new Container(fedoraContainer)
                         {
                             ObjectPath = GetObjectPath(fedoraContainer.Id),
-                            PreservationApiUri = GetApiUri(fedoraContainer.Id)
+                            StorageApiUri = GetApiUri(fedoraContainer.Id)
                         };
                     }
                     topContainer.Containers.Add(container!);
@@ -913,7 +913,7 @@ public class FedoraWrapper : IFedora
                     var binary = new Binary(fedoraBinary!)
                     {
                         ObjectPath = GetObjectPath(fedoraBinary!.Id),
-                        PreservationApiUri = GetApiUri(fedoraBinary.Id)
+                        StorageApiUri = GetApiUri(fedoraBinary.Id)
                     };
                     topContainer.Binaries.Add(binary);
                 }

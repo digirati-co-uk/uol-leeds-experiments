@@ -22,7 +22,7 @@ public abstract class Resource
     [JsonPropertyName("@id")]
     [JsonPropertyOrder(1)]
     // The URI for this Storage API (accessible to API consumers)
-    public Uri? PreservationApiUri { get; set; }
+    public Uri? StorageApiUri { get; set; }
 
     [JsonPropertyName("id")]
     [JsonPropertyOrder(12)]

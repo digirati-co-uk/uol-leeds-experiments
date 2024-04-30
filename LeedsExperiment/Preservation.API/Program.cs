@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models;
 using Preservation;
+using Preservation.API.Models;
 using PreservationApiClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,16 +13,20 @@ builder.Services
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
     });
-
-builder.Services.AddHttpLogging(o => { });
 
 builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["StorageApiBaseAddress"]!);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
+
+builder.Services
+    .AddHttpContextAccessor()
+    .AddHttpLogging(o => { })
+    .AddScoped<UriGenerator>()
+    .AddScoped<ModelConverter>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
