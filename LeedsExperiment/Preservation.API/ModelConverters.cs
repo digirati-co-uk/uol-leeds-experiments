@@ -1,7 +1,7 @@
 ﻿using Fedora.Abstractions;
 using Fedora.Storage;
 
-namespace Preservation.API.Controllers;
+namespace Preservation.API;
 
 public static class ModelConverters
 {
