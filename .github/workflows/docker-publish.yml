@@ -6,7 +6,19 @@ on:
 
 jobs:
 
-  build-push-api:
+  build-push-storage-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/docker-build-and-push
+        name: build and push
+        with:
+          image-name: "Storage-API"
+          dockerfile: "./LeedsExperiment/Storage.API/Dockerfile"
+          context: "./LeedsExperiment/"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-push-preservation-api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,9 +26,9 @@ jobs:
         name: build and push
         with:
           image-name: "Preservation-API"
-          dockerfile: "./LeedsExperiment/Storage.API/Dockerfile"
+          dockerfile: "./LeedsExperiment/Preservation.API/Dockerfile"
           context: "./LeedsExperiment/"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}  
 
   build-push-dashboard:
     runs-on: ubuntu-latest

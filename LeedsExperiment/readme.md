@@ -12,3 +12,12 @@ Experiments related to DLIP project.
 * SamplesWorker
 * `Storage.API` - _was_ `Preservation.API` but renamed. Wrapper around Fedora API
 * `Preservation.API` - higher level API. Sits infront of `Storage.API` and used by client applications for API interactions
+
+## Building Image
+
+```bash
+cd .\LeedsExperiment\
+docker build -t dlip-storage:local -f .\Storage.API\Dockerfile .
+docker build -t dlip-preservation:local -f .\Preservation.API\Dockerfile .
+docker build -t dlip-dash:local -f .\Dashboard\Dockerfile .
+```
