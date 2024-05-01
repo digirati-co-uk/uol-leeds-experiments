@@ -18,7 +18,7 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     /// <returns><see cref="Container"/>, <see cref="DigitalObject"/> or <see cref="Binary"/></returns>
     [HttpGet(Name = "Browse")]
     [Produces("application/json")]
-    public async Task<IActionResult> Index([FromRoute] string path, [FromQuery] string? version = null)
+    public async Task<IActionResult> Browse([FromRoute] string path, [FromQuery] string? version = null)
     {
         var unEscapedPath = Uri.UnescapeDataString(path);
         var storageResource = string.IsNullOrEmpty(version)
@@ -30,5 +30,23 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
         var preservationResource =
             modelConverter.ToPreservationResource(storageResource, new Uri(HttpContext.Request.GetDisplayUrl()));
         return Ok(preservationResource);
+    }
+
+    /// <summary>
+    /// Create Container in underlying repository, at specified path. This is _not_ a directory within a DigitalObject
+    /// but rather to hierarchically organise content in the repository (note: this currently is not enforced).
+    /// In production this would be restricted to a small subset of users/applications.
+    /// </summary>
+    /// <param name="path">Path of Container to create</param>
+    /// <returns>Newly create container</returns>
+    [HttpPost]
+    [Produces("application/json")]
+    public async Task<IActionResult> CreateContainer([FromRoute] string path)
+    {
+        var unEscapedPath = Uri.UnescapeDataString(path);
+        var storageContainer = await preservation.CreateContainer(unEscapedPath);
+        
+        var container = modelConverter.ToPreservationResource(storageContainer, new Uri(HttpContext.Request.GetDisplayUrl()));
+        return CreatedAtAction("Browse", new { path }, container);
     }
 }

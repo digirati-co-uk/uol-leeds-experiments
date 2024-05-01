@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Amazon.S3;
 using Microsoft.OpenApi.Models;
 using Preservation;
 using Preservation.API.Models;
@@ -26,7 +27,9 @@ builder.Services
     .AddHttpContextAccessor()
     .AddHttpLogging(o => { })
     .AddScoped<UriGenerator>()
-    .AddScoped<ModelConverter>();
+    .AddScoped<ModelConverter>()
+    .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
+    .AddAWSService<IAmazonS3>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
@@ -46,10 +49,6 @@ builder.Services.AddSwaggerGen(opts =>
 var app = builder.Build();
 
 app.MapGet("/ping", () => "pong");
-
-// Is this required?
-app.MapPost("/repository/{*path}",
-    (string path) => "Create Container in Repo, via StorageApi - restricted to some users");
 
 // Deposits
 app.MapPost("/deposits", () => "Create Deposit and assign URI. Maybe empty body");
