@@ -1,8 +1,13 @@
 ﻿using Fedora.Abstractions;
 using Fedora.Storage;
+using Preservation.API.Data.Entities;
 
 namespace Preservation.API.Models;
 
+/// <summary>
+/// Easy r-to-l converters for various models
+/// </summary>
+/// <param name="uriGenerator">Helper for generating various URIs</param>
 public class ModelConverter(UriGenerator uriGenerator)
 {
     public PreservationResource ToPreservationResource(Fedora.Abstractions.Resource storageResource, Uri requestPath)
@@ -32,6 +37,21 @@ public class ModelConverter(UriGenerator uriGenerator)
 
         throw new InvalidOperationException($"Unable to handle {storageResource.GetType()} resource");
     }
+
+    public Deposit ToDeposit(DepositEntity entity) =>
+        new()
+        {
+            Id = uriGenerator.GetDepositPath(entity.Id),
+            Status = entity.Status,
+            SubmissionText = entity.SubmissionText,
+            DigitalObject = entity.PreservationPath,
+            Created = entity.Created,
+            CreatedBy = new Uri($"http://example.id/{entity.CreatedBy}"),
+            LastModified = entity.LastModified,
+            LastModifiedBy = string.IsNullOrEmpty(entity.LastModifiedBy)
+                ? null
+                : new Uri($"http://example.id/{entity.LastModifiedBy}"),
+        };
 
     private DigitalObjectVersion? ToDigitalObjectVersion(ObjectVersion? objectVersion, Uri repositoryUri)
     {

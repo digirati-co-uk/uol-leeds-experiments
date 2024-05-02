@@ -197,7 +197,7 @@ public class Deposit : PreservationResource
     /// preservation.
     /// </summary>
     [JsonPropertyOrder(10)]
-    public Uri DigitalObject { get; set; }
+    public Uri? DigitalObject { get; set; }
     
     /// <summary>
     /// An S3 key that represents a parent location. Use the "space" under this key to assemble files for an ImportJob.
@@ -215,7 +215,7 @@ public class Deposit : PreservationResource
     /// A space to leave notes for colleagues or your future self
     /// </summary>
     [JsonPropertyOrder(13)]
-    public string SubmissionText { get; set; }
+    public string? SubmissionText { get; set; }
     
     /// <summary>
     /// Timestamp indicating when this deposit was last used to create an ImportJob for the Repository

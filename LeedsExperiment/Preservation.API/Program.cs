@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Amazon.S3;
 using Microsoft.OpenApi.Models;
 using Preservation;
+using Preservation.API;
 using Preservation.API.Data;
 using Preservation.API.Models;
 using PreservationApiClient;
@@ -18,9 +19,12 @@ builder.Services
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
     });
 
+builder.Services.Configure<PreservationSettings>(builder.Configuration);
+var preservationConfig = builder.Configuration.Get<PreservationSettings>()!;
+
 builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["StorageApiBaseAddress"]!);
+    client.BaseAddress = preservationConfig.StorageApiBaseAddress;
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
@@ -53,9 +57,7 @@ var app = builder.Build();
 app.MapGet("/ping", () => "pong");
 
 // Deposits
-app.MapPost("/deposits", () => "Create Deposit and assign URI. Maybe empty body");
 app.MapPost("/deposits/export", () => "Export specified 'digitalObject' to S3");
-app.MapGet("/deposits/{id}", (string id) => $"Get details of Deposit {id}");
 
 // ImportJob
 app.MapGet("/deposits/{id}/importJobs/diff", (string id) => $"Get importJob JSON for files in Deposit {id}");

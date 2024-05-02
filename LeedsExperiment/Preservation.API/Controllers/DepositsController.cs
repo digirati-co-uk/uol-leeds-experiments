@@ -1,12 +1,25 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Preservation.API.Data;
+using Preservation.API.Data.Entities;
 using Preservation.API.Models;
 
 namespace Preservation.API.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class DepositsController : Controller
+public class DepositsController(
+    IAmazonS3 awsS3Client,
+    PreservationContext dbContext,
+    ModelConverter modelConverter,
+    IOptions<PreservationSettings> preservationOptions,
+    ILogger<DepositsController> logger)
+    : Controller
 {
+    private readonly PreservationSettings preservationSettings = preservationOptions.Value;
+
     /// <summary>
     /// Create a new Deposit object. This will create a working location in s3 that will contain working set of files
     /// that will become a <see cref="DigitalObject"/>. 
@@ -30,28 +43,47 @@ public class DepositsController : Controller
     [HttpPost]
     [Produces("application/json")]
     [Produces<Deposit>]
-    public IActionResult Create(Deposit? deposit = null)
+    public async Task<IActionResult> Create(Deposit? deposit = null, CancellationToken cancellationToken = default)
     {
         // NOTE: In reality it would be the Id service that generates this 
         var id = Identifiable.Generate();
-        /*
-         * empty body = create new Deposit + assign a new URI (from ID service)
-         * partial - has PreservationURI and/or submissionText
-         */
-        
-        /*
-         * Create key in S3 - need to store what was (maybe) provided.
-         * but this could also be provided from export. Would be in DB but just store in json file?
-         */
-        throw new NotImplementedException();
+
+        // create a key in S3
+        var putObject = new PutObjectRequest
+        {
+            BucketName = preservationSettings.DepositBucket,
+            Key = $"{preservationSettings}{id}/"
+        };
+        var putResult = await awsS3Client.PutObjectAsync(putObject, cancellationToken);
+        if (putResult == null)
+        {
+            logger.LogError("Received empty response creating deposit at {BucketName}:{Key}", putObject.BucketName,
+                putObject.Key);
+            return new StatusCodeResult(500);
+        }
+
+        // SubmissionText + PreservationPath are optional
+        var depositEntity = new DepositEntity
+        {
+            Id = id,
+            Status = "new",
+            S3Root = putObject.GetS3Uri(),
+            SubmissionText = deposit?.SubmissionText,
+            PreservationPath = deposit?.DigitalObject
+        };
+        dbContext.Deposits.Add(depositEntity);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogDebug("Created deposit {DepositId} in database", depositEntity.Id);
+
+        var createdDeposit = modelConverter.ToDeposit(depositEntity);
+        return Created(createdDeposit.Id, createdDeposit);
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
     [HttpGet("{id}", Name = "GetDeposit")]
     [Produces("application/json")]
     [Produces<Deposit>]
@@ -62,4 +94,10 @@ public class DepositsController : Controller
          */
         throw new NotImplementedException();
     }
+}
+
+public static class S3Helpers
+{
+    public static Uri GetS3Uri(this PutObjectRequest putObjectRequest) =>
+        new UriBuilder($"s3://{putObjectRequest.BucketName}") { Path = putObjectRequest.Key }.Uri;
 }
