@@ -19,7 +19,7 @@ public class DepositEntity
     public DateTime Created { get; set; }
     public string CreatedBy { get; set; }
     public DateTime? LastModified { get; set; }
-    public string LastModifiedBy { get; set; }
+    public string? LastModifiedBy { get; set; }
     
     /// <summary>
     /// Root folder where this deposit will be arranged (files added etc)

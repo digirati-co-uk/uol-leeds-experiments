@@ -2,6 +2,7 @@
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Preservation.API.Controllers.Services;
 using Preservation.API.Data;
 using Preservation.API.Data.Entities;
 using Preservation.API.Models;
@@ -14,6 +15,7 @@ public class DepositsController(
     IAmazonS3 awsS3Client,
     PreservationContext dbContext,
     ModelConverter modelConverter,
+    IIdentityService identityService,
     IOptions<PreservationSettings> preservationOptions,
     ILogger<DepositsController> logger)
     : Controller
@@ -45,14 +47,13 @@ public class DepositsController(
     [Produces<Deposit>]
     public async Task<IActionResult> Create(Deposit? deposit = null, CancellationToken cancellationToken = default)
     {
-        // NOTE: In reality it would be the Id service that generates this 
-        var id = Identifiable.Generate();
-
+        var depositId = await identityService.MintNewIdentity(cancellationToken);
+        
         // create a key in S3
         var putObject = new PutObjectRequest
         {
             BucketName = preservationSettings.DepositBucket,
-            Key = $"{preservationSettings}{id}/"
+            Key = $"{preservationSettings.DepositKeyPrefix}{depositId}/"
         };
         var putResult = await awsS3Client.PutObjectAsync(putObject, cancellationToken);
         if (putResult == null)
@@ -65,15 +66,17 @@ public class DepositsController(
         // SubmissionText + PreservationPath are optional
         var depositEntity = new DepositEntity
         {
-            Id = id,
+            Id = depositId,
             Status = "new",
             S3Root = putObject.GetS3Uri(),
             SubmissionText = deposit?.SubmissionText,
-            PreservationPath = deposit?.DigitalObject
+            PreservationPath = deposit?.DigitalObject,
+            CreatedBy = "leedsadmin",
         };
         dbContext.Deposits.Add(depositEntity);
         await dbContext.SaveChangesAsync(cancellationToken);
-        logger.LogDebug("Created deposit {DepositId} in database", depositEntity.Id);
+        logger.LogDebug("Created deposit {DepositId} in database + S3 at '{DepositKey}'", depositEntity.Id,
+            depositEntity.S3Root);
 
         var createdDeposit = modelConverter.ToDeposit(depositEntity);
         return Created(createdDeposit.Id, createdDeposit);

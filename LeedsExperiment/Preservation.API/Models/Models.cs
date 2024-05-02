@@ -41,6 +41,7 @@ public abstract class PreservationResource
 /// </remarks>
 public class DigitalObject : PreservationResource
 {
+    [JsonPropertyOrder(2)]
     public override string Type { get; set; } = nameof(DigitalObject);
     
     /// <summary>
