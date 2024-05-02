@@ -41,6 +41,7 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     /// <returns>Newly create container</returns>
     [HttpPost]
     [Produces("application/json")]
+    [Produces<Container>]
     public async Task<IActionResult> CreateContainer([FromRoute] string path)
     {
         var unEscapedPath = Uri.UnescapeDataString(path);

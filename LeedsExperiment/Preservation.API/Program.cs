@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Amazon.S3;
 using Microsoft.OpenApi.Models;
 using Preservation;
+using Preservation.API.Data;
 using Preservation.API.Models;
 using PreservationApiClient;
 
@@ -29,7 +30,8 @@ builder.Services
     .AddScoped<UriGenerator>()
     .AddScoped<ModelConverter>()
     .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
-    .AddAWSService<IAmazonS3>();
+    .AddAWSService<IAmazonS3>()
+    .AddPreservationContext(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
@@ -59,6 +61,7 @@ app.MapGet("/deposits/{id}", (string id) => $"Get details of Deposit {id}");
 app.MapGet("/deposits/{id}/importJobs/diff", (string id) => $"Get importJob JSON for files in Deposit {id}");
 app.MapPost("/deposits/{id}/importJobs", (string id) => "Import data into Fedora");
 
+app.TryRunMigrations(app.Configuration, app.Logger);
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();

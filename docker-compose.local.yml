@@ -1,0 +1,18 @@
+version: "3.9"
+
+volumes:
+  uol_postgres_data: {}
+  uol_postgres_data_backups: {}
+
+services:
+  postgres:
+    image: postgres:14
+    hostname: postgres
+    ports:
+      - "5430:5432"
+    volumes:
+      - uol_postgres_data:/var/lib/postgresql/data
+      - uol_postgres_data_backups:/backups
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=uol_password
