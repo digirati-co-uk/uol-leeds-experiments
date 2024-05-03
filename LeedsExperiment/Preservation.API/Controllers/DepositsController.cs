@@ -112,7 +112,7 @@ public class DepositsController(
     public async Task<IActionResult> Get([FromRoute] string id, CancellationToken cancellationToken)
     {
         var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
-        return existingDeposit == null ? NotFound() : Ok(existingDeposit);
+        return existingDeposit == null ? NotFound() : Ok(modelConverter.ToDeposit(existingDeposit));
     }
 
     /// <summary>

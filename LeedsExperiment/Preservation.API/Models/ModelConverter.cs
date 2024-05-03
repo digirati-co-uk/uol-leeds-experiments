@@ -45,6 +45,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             Status = entity.Status,
             SubmissionText = entity.SubmissionText,
             DigitalObject = entity.PreservationPath,
+            Files = entity.S3Root.ToString(),
             Created = entity.Created,
             CreatedBy = new Uri($"http://example.id/{entity.CreatedBy}"),
             LastModified = entity.LastModified,
