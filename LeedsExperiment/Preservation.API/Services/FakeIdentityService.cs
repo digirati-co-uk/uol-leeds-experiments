@@ -2,7 +2,7 @@
 using Preservation.API.Data;
 using Preservation.API.Models;
 
-namespace Preservation.API.Controllers.Services;
+namespace Preservation.API.Services;
 
 public class FakeIdentityService(PreservationContext dbContext) : IIdentityService
 {

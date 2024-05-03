@@ -1,11 +1,12 @@
-﻿using Amazon.S3;
+﻿using System.Linq.Expressions;
+using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Preservation.API.Controllers.Services;
 using Preservation.API.Data;
 using Preservation.API.Data.Entities;
 using Preservation.API.Models;
+using Preservation.API.Services;
 
 namespace Preservation.API.Controllers;
 
@@ -27,7 +28,7 @@ public class DepositsController(
     /// that will become a <see cref="DigitalObject"/>. 
     /// </summary>
     /// <param name="deposit">(Optional) Partial deposit object containing Preservation URI or submission text</param>
-    /// <returns></returns>
+    /// <returns>Newly created <see cref="Deposit"/> object</returns>
     /// <remarks>
     /// Sample request:
     ///
@@ -45,10 +46,11 @@ public class DepositsController(
     [HttpPost]
     [Produces("application/json")]
     [Produces<Deposit>]
-    public async Task<IActionResult> Create(Deposit? deposit = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Create([FromBody] Deposit? deposit = null,
+        CancellationToken cancellationToken = default)
     {
         var depositId = await identityService.MintNewIdentity(cancellationToken);
-        
+
         // create a key in S3
         var putObject = new PutObjectRequest
         {
@@ -70,7 +72,7 @@ public class DepositsController(
             Status = "new",
             S3Root = putObject.GetS3Uri(),
             SubmissionText = deposit?.SubmissionText,
-            PreservationPath = deposit?.DigitalObject,
+            PreservationPath = deposit?.DigitalObject, // TODO handle this/validation etc
             CreatedBy = "leedsadmin",
         };
         dbContext.Deposits.Add(depositEntity);
@@ -83,24 +85,58 @@ public class DepositsController(
     }
 
     /// <summary>
-    /// 
+    /// Update values of existing Deposit object. Used to set DigitalObject, SubmissionText and/or Status value.  
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <param name="id">Id of Deposit to PATCH</param>
+    /// <param name="changes">Object containing values to update</param>
+    /// <returns>Updated <see cref="Deposit"/> object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     PATCH /deposits/xmpwer321
+    ///     {
+    ///       "digitalObject": "https://preservation.dlip.leeds.ac.uk/repository/example-objects/DigitalObject2",
+    ///       "submissionText": "Just leaving this here",
+    ///       "status": "processing"
+    ///     }
+    /// </remarks>
+    [HttpPatch("{id}")]
+    [Produces("application/json")]
+    [Produces<Deposit>]
+    public async Task<IActionResult> Create([FromRoute] string id, [FromBody] PatchDeposit changes,
+        CancellationToken cancellationToken)
+    {
+        var existingDeposit = await dbContext.Deposits.FindAsync([id], cancellationToken);
+        if (existingDeposit == null) return NotFound();
+
+        if (changes.DigitalObject != null) existingDeposit.PreservationPath = changes.DigitalObject;
+        if (changes.SubmissionText != null) existingDeposit.SubmissionText = changes.SubmissionText;
+        if (changes.Status != null) existingDeposit.Status = changes.Status;
+        existingDeposit.LastModified = DateTime.UtcNow;
+        existingDeposit.LastModifiedBy = "leedsadmin";
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Ok(existingDeposit);
+    }
+
+    /// <summary>
+    /// Get existing deposit with specified Id
+    /// </summary>
+    /// <param name="id">Id of Deposit to fetch</param>
+    /// <returns><see cref="Deposit"/> object</returns>
     [HttpGet("{id}", Name = "GetDeposit")]
     [Produces("application/json")]
     [Produces<Deposit>]
-    public IActionResult Get([FromRoute] string id)
+    public async Task<IActionResult> Get([FromRoute] string id, CancellationToken cancellationToken)
     {
-        /*
-         * empty body = create new Deposit + assign a new URI (from ID service)
-         */
-        throw new NotImplementedException();
+        var existingDeposit = await dbContext.Deposits.FindAsync([id], cancellationToken);
+        return existingDeposit == null ? NotFound() : Ok(existingDeposit);
     }
 }
 
-public static class S3Helpers
+public class PatchDeposit
 {
-    public static Uri GetS3Uri(this PutObjectRequest putObjectRequest) =>
-        new UriBuilder($"s3://{putObjectRequest.BucketName}") { Path = putObjectRequest.Key }.Uri;
+    public Uri? DigitalObject { get; set; }
+    public string? SubmissionText { get; set; }
+    public string? Status { get; set; }
 }
