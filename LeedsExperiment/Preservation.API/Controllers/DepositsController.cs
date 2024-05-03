@@ -32,11 +32,9 @@ public class DepositsController(
     /// <remarks>
     /// Sample request:
     ///
-    ///  Empty body, creates new Deposit
     ///     POST /deposits/
     ///     { }
     ///
-    ///  Partial body, creates new Deposit specifying Preservation URI with optional submissionText
     ///     POST /deposits/
     ///     {
     ///       "digitalObject": "https://preservation.dlip.leeds.ac.uk/repository/example-objects/DigitalObject2",
@@ -46,7 +44,7 @@ public class DepositsController(
     [HttpPost]
     [Produces("application/json")]
     [Produces<Deposit>]
-    public async Task<IActionResult> Create([FromBody] Deposit? deposit = null,
+    public async Task<IActionResult> Create([FromBody] CreateDeposit? deposit = null,
         CancellationToken cancellationToken = default)
     {
         var depositId = await identityService.MintNewIdentity(cancellationToken);
@@ -134,9 +132,14 @@ public class DepositsController(
     }
 }
 
-public class PatchDeposit
+// Using these models saves Swagger docs reading like all available fields are available for all actions
+public class CreateDeposit
 {
     public Uri? DigitalObject { get; set; }
     public string? SubmissionText { get; set; }
+}
+
+public class PatchDeposit : CreateDeposit
+{
     public string? Status { get; set; }
 }
