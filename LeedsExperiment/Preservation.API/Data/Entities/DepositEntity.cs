@@ -33,3 +33,20 @@ public class DepositEntity
     public string? VersionExported { get; set; }
     public string? VersionSaved { get; set; }
 }
+
+public static class DepositStates
+{
+    public const string New = "new";
+    public const string Exporting = "exporting";
+    public const string Ready = "ready";
+}
+public static class DepositEntityX
+{
+    /// <summary>
+    /// RFC states, for an export operation, 'While the Deposit object is returned immediately, it's not complete
+    /// until its status property is "ready". This function is to check if it's being exported. Rather than check if
+    /// "ready"
+    /// </summary>
+    public static bool IsBeingExported(this DepositEntity entity) =>
+        entity.Status.Equals(DepositStates.Exporting, StringComparison.OrdinalIgnoreCase);
+}

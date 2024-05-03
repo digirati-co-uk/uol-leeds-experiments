@@ -35,9 +35,11 @@ builder.Services
     .AddScoped<UriGenerator>()
     .AddScoped<ModelConverter>()
     .AddScoped<IIdentityService, FakeIdentityService>()
+    .AddScoped<IExportQueue, InProcessExportQueue>()
     .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
     .AddAWSService<IAmazonS3>()
-    .AddPreservationContext(builder.Configuration);
+    .AddPreservationContext(builder.Configuration)
+    .AddHostedService<DepositExporter>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
