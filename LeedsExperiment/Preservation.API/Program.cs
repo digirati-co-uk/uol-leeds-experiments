@@ -35,7 +35,7 @@ builder.Services
     .AddScoped<UriGenerator>()
     .AddScoped<ModelConverter>()
     .AddScoped<IIdentityService, FakeIdentityService>()
-    .AddScoped<IExportQueue, InProcessExportQueue>()
+    .AddSingleton<IExportQueue, InProcessExportQueue>()
     .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
     .AddAWSService<IAmazonS3>()
     .AddPreservationContext(builder.Configuration)

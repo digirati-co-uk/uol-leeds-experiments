@@ -3,6 +3,7 @@ using Fedora.Abstractions.Transfer;
 
 namespace Preservation;
 
+// TODO should this be IStorage?
 public interface IPreservation
 {
     // Getting things from Fedora
@@ -18,14 +19,17 @@ public interface IPreservation
     // ===============================
 
     /// <summary>
-    /// The Preservation app decides where to put this - in a bucket under a unique key - and then tells you where it is
-    /// rather than you specifiying where you want it put. Do we want to allow that? It would still need to be somewhere in an accessible
-    /// bucket - better to leave it in the hands of the preservation API to avoid collisions
+    /// In most instances the Storage API decides where to put this - in a bucket under a unique key - and then tells
+    /// you where it is rather than you specifiying where you want it put. However, in some instances the Preservation
+    /// API will know where it wants to place things. This means there's a dependency between Storage + Preservation API
+    /// having write access to the same bucket. Original comment here had concerns of collision - this shouldn't be the
+    /// case as Preservation-API will manage that.
     /// </summary>
     /// <param name="path">Repository path / identifier of Archival Group</param>
     /// <param name="version">(optional) The version to export; if omitted the HEAD (latest) is exported</param>
+    /// <param name="destination">(optional) The version to export; if omitted the HEAD (latest) is exported</param>
     /// <returns></returns>
-    Task<ExportResult> Export(string path, string? version);
+    Task<ExportResult> Export(string path, string? version, string? destination = null);
     
     /// <summary>
     /// An ImportJob is a representation of what needs doing to bring the repository ArchivalGroup to the same state

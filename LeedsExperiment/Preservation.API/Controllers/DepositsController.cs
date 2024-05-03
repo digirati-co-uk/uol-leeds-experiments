@@ -78,7 +78,7 @@ public class DepositsController(
     public async Task<IActionResult> Create([FromRoute] string id, [FromBody] PatchDeposit changes,
         CancellationToken cancellationToken)
     {
-        var existingDeposit = await dbContext.Deposits.FindAsync([id], cancellationToken);
+        var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
         if (existingDeposit == null) return NotFound();
         if (existingDeposit.IsBeingExported()) return BadRequest("Deposit is being exported");
 
@@ -94,8 +94,8 @@ public class DepositsController(
 
             existingDeposit.Status = changes.Status;
         }
-        existingDeposit.LastModified = DateTime.UtcNow;
-        existingDeposit.LastModifiedBy = "leedsadmin";
+
+        existingDeposit.SetModified();
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return Ok(existingDeposit);
@@ -111,7 +111,7 @@ public class DepositsController(
     [Produces<Deposit>]
     public async Task<IActionResult> Get([FromRoute] string id, CancellationToken cancellationToken)
     {
-        var existingDeposit = await dbContext.Deposits.FindAsync([id], cancellationToken);
+        var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
         return existingDeposit == null ? NotFound() : Ok(existingDeposit);
     }
 
@@ -146,7 +146,7 @@ public class DepositsController(
             await CreateNewDeposit("Created from export", deposit.DigitalObject, true, cancellationToken);
 
         // queue for export
-        await exportQueue.QueueRequest(depositEntity, cancellationToken);
+        await exportQueue.QueueRequest(depositEntity, deposit, cancellationToken);
 
         var createdDeposit = modelConverter.ToDeposit(depositEntity);
         return Created(createdDeposit.Id, createdDeposit);

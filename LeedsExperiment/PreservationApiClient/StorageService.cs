@@ -14,6 +14,7 @@ public class StorageService : IPreservation
     private const string infoPrefix = "api/info/";
     private const string agPrefix = "api/archivalGroup/";
     private const string exportPrefix = "api/export/";
+    private const string exportInternalPrefix = "api/internal/export/";
     private const string importPrefix = "api/import/";
 
     public StorageService(HttpClient httpClient)
@@ -84,9 +85,11 @@ public class StorageService : IPreservation
         return info!;
     }
 
-    public async Task<ExportResult> Export(string path, string? version)
+    public async Task<ExportResult> Export(string path, string? version, string? destination = null)
     {
-        var apiPath = $"{exportPrefix}{path.TrimStart('/')}";
+        var exportRoute = string.IsNullOrEmpty(destination) ? exportPrefix : exportInternalPrefix;
+        
+        var apiPath = $"{exportRoute}{path.TrimStart('/')}";
         if (!string.IsNullOrWhiteSpace(version))
         {
             apiPath += "?version=" + version;

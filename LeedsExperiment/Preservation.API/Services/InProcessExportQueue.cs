@@ -1,12 +1,13 @@
 ﻿using System.Threading.Channels;
+using Preservation.API.Controllers;
 using Preservation.API.Data.Entities;
 
 namespace Preservation.API.Services;
 
 public interface IExportQueue
 {
-    ValueTask QueueRequest(DepositEntity deposit, CancellationToken cancellationToken);
-    ValueTask<DepositEntity> DequeueRequest(CancellationToken cancellationToken);
+    ValueTask QueueRequest(DepositEntity deposit, ExportDeposit exportDeposit, CancellationToken cancellationToken);
+    ValueTask<ExportRequest> DequeueRequest(CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -15,7 +16,7 @@ public interface IExportQueue
 /// <remarks>This is purely for demo purposes - this would likely use SQS </remarks>
 public class InProcessExportQueue : IExportQueue
 {
-    private readonly Channel<DepositEntity> queue;
+    private readonly Channel<ExportRequest> queue;
     
     public InProcessExportQueue()
     {
@@ -24,12 +25,15 @@ public class InProcessExportQueue : IExportQueue
             FullMode = BoundedChannelFullMode.Wait
         };
 
-        queue = Channel.CreateBounded<DepositEntity>(options);
+        queue = Channel.CreateBounded<ExportRequest>(options);
     }
 
-    public ValueTask QueueRequest(DepositEntity deposit, CancellationToken cancellationToken) =>
-        queue.Writer.WriteAsync(deposit, cancellationToken);
+    public ValueTask QueueRequest(DepositEntity deposit, ExportDeposit exportDeposit,
+        CancellationToken cancellationToken) =>
+        queue.Writer.WriteAsync(new ExportRequest(deposit.Id, exportDeposit.Version), cancellationToken);
 
-    public ValueTask<DepositEntity> DequeueRequest(CancellationToken cancellationToken)
+    public ValueTask<ExportRequest> DequeueRequest(CancellationToken cancellationToken)
         => queue.Reader.ReadAsync(cancellationToken);
 }
+
+public record ExportRequest(string DepositId, string? Version);

@@ -39,6 +39,7 @@ public static class DepositStates
     public const string New = "new";
     public const string Exporting = "exporting";
     public const string Ready = "ready";
+    public const string ExportError = "export-error";
 }
 public static class DepositEntityX
 {
