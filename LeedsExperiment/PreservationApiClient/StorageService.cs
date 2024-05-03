@@ -7,19 +7,19 @@ namespace PreservationApiClient;
 
 public class StorageService : IPreservation
 {
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient httpClient;
 
     // This is horrible and wrong
     private const string repositoryPrefix = "api/repository/";
     private const string infoPrefix = "api/info/";
     private const string agPrefix = "api/archivalGroup/";
     private const string exportPrefix = "api/export/";
-    private const string exportInternalPrefix = "api/internal/export/";
+    private const string exportInternalPrefix = "api/export/internal/";
     private const string importPrefix = "api/import/";
 
     public StorageService(HttpClient httpClient)
     {
-        _httpClient = httpClient;
+        this.httpClient = httpClient;
     }
 
     public string GetInternalPath(Uri preservationApiUri)
@@ -34,7 +34,7 @@ public class StorageService : IPreservation
             path = string.Empty;
         }
         var req = new HttpRequestMessage(HttpMethod.Get, new Uri($"{repositoryPrefix}{path.TrimStart('/')}", UriKind.Relative));
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         return await ParseResource(response);
     }
 
@@ -73,7 +73,7 @@ public class StorageService : IPreservation
             apiPath += "?version=" + version;
         }
         var agApi = new Uri(apiPath, UriKind.Relative);
-        var ag = await _httpClient.GetFromJsonAsync<ArchivalGroup>(agApi);
+        var ag = await httpClient.GetFromJsonAsync<ArchivalGroup>(agApi);
         return ag;
     }
 
@@ -81,7 +81,7 @@ public class StorageService : IPreservation
     {
         var apiPath = $"{infoPrefix}{path.TrimStart('/')}";
         var infoApi = new Uri(apiPath, UriKind.Relative);
-        var info = await _httpClient.GetFromJsonAsync<ResourceInfo>(infoApi);
+        var info = await httpClient.GetFromJsonAsync<ResourceInfo>(infoApi);
         return info!;
     }
 
@@ -90,12 +90,14 @@ public class StorageService : IPreservation
         var exportRoute = string.IsNullOrEmpty(destination) ? exportPrefix : exportInternalPrefix;
         
         var apiPath = $"{exportRoute}{path.TrimStart('/')}";
-        if (!string.IsNullOrWhiteSpace(version))
-        {
-            apiPath += "?version=" + version;
-        }
+
+        var queryParams = new List<string>();
+        if (!string.IsNullOrWhiteSpace(version)) queryParams.Add($"version={version}");
+        if (!string.IsNullOrWhiteSpace(destination)) queryParams.Add($"destinationKey={destination}");
+        apiPath += $"?{string.Join('&', queryParams)}";
+        
         var exportApi = new Uri(apiPath, UriKind.Relative);
-        var exportResponse = await _httpClient.PostAsync(exportApi, null); // POST but no request body
+        var exportResponse = await httpClient.PostAsync(exportApi, null); // POST but no request body
         exportResponse.EnsureSuccessStatusCode();
         var export = await exportResponse.Content.ReadFromJsonAsync<ExportResult>();
 
@@ -111,7 +113,7 @@ public class StorageService : IPreservation
     {
         var apiPath = $"{importPrefix}{archivalGroupPath.TrimStart('/')}?source={source}";
         var importApi = new Uri(apiPath, UriKind.Relative);
-        var importJob = await _httpClient.GetFromJsonAsync<ImportJob>(importApi);
+        var importJob = await httpClient.GetFromJsonAsync<ImportJob>(importApi);
         // What's the best way to deal with problems here?
         if (importJob != null)
         {
@@ -123,7 +125,7 @@ public class StorageService : IPreservation
     public async Task<ImportJob> Import(ImportJob importJob)
     {
         var apiPath = $"{importPrefix}__import";
-        var response = await _httpClient.PostAsJsonAsync(new Uri(apiPath, UriKind.Relative), importJob);
+        var response = await httpClient.PostAsJsonAsync(new Uri(apiPath, UriKind.Relative), importJob);
         var processedImportJob = await response.Content.ReadFromJsonAsync<ImportJob>();
         if (processedImportJob != null)
         {
@@ -137,7 +139,7 @@ public class StorageService : IPreservation
     {
         // This PUT is a bit too general
         var req = new HttpRequestMessage(HttpMethod.Put, new Uri($"{repositoryPrefix}{path.TrimStart('/')}", UriKind.Relative));
-        var response = await _httpClient.SendAsync(req);
+        var response = await httpClient.SendAsync(req);
         var container = (await ParseResource(response)) as Container;
         if(container == null)
         {

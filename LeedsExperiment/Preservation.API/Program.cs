@@ -35,11 +35,12 @@ builder.Services
     .AddScoped<UriGenerator>()
     .AddScoped<ModelConverter>()
     .AddScoped<IIdentityService, FakeIdentityService>()
+    .AddScoped<DepositExporter>()
     .AddSingleton<IExportQueue, InProcessExportQueue>()
     .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
     .AddAWSService<IAmazonS3>()
     .AddPreservationContext(builder.Configuration)
-    .AddHostedService<DepositExporter>();
+    .AddHostedService<DepositExporterService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
@@ -59,9 +60,6 @@ builder.Services.AddSwaggerGen(opts =>
 var app = builder.Build();
 
 app.MapGet("/ping", () => "pong");
-
-// Deposits
-app.MapPost("/deposits/export", () => "Export specified 'digitalObject' to S3");
 
 // ImportJob
 app.MapGet("/deposits/{id}/importJobs/diff", (string id) => $"Get importJob JSON for files in Deposit {id}");

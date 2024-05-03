@@ -4,27 +4,9 @@ using Preservation.API.Data.Entities;
 
 namespace Preservation.API.Services;
 
-/// <summary>
-/// Listens to queue export and handles export process
-/// </summary>
-public class DepositExporter(
-    IExportQueue exportQueue,
-    IPreservation preservation,
-    PreservationContext dbContext,
-    ILogger<DepositExporter> logger) : BackgroundService
+public class DepositExporter(IPreservation preservation, PreservationContext dbContext, ILogger<DepositExporter> logger)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        logger.LogInformation($"Starting {nameof(DepositExporter)}");
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var exportRequest = await exportQueue.DequeueRequest(stoppingToken);
-            await DoExport(exportRequest, stoppingToken);
-        }
-    }
-
-    private async Task DoExport(ExportRequest exportRequest, CancellationToken cancellationToken)
+    public async Task Export(ExportRequest exportRequest, CancellationToken cancellationToken)
     {
         var deposit = await GetDeposit(exportRequest.DepositId, cancellationToken);
         if (deposit == null) return;
@@ -39,6 +21,7 @@ public class DepositExporter(
 
             logger.LogInformation("Export of deposit {Deposit} to {ExportKey} completed in {Elapsed}ms", deposit.Id,
                 exportKey, stopWatch.ElapsedMilliseconds);
+            logger.LogDebug("Export {Deposit} result: {@Export}", deposit.Id, exportResult);
             
             deposit.SetModified(nameof(DepositExporter));
             deposit.Status = DepositStates.Ready;
@@ -50,7 +33,7 @@ public class DepositExporter(
             logger.LogError(ex, "Error occurred exporting {Deposit}", exportRequest);
             deposit.SetModified(nameof(DepositExporter));
             deposit.Status = DepositStates.ExportError;
-            deposit.SubmissionText += $"Error exporting {ex.Message}";
+            deposit.SubmissionText += $" Error exporting {ex.Message}";
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);

@@ -24,7 +24,7 @@ public class ExportController(
     /// <param name="path">Path of Fedora item to export (e.g. path/to/item)</param>
     /// <param name="version">Optional version to export (e.g. v1, v2 etc). Latest version returned if not specified</param>
     /// <returns>JSON object representing result of export operation</returns>
-    [HttpGet("{*path}", Name = "Export")]
+    [HttpPost("{*path}", Name = "Export")]
     [Produces<ExportResult>]
     [Produces("application/json")]
     public async Task<ExportResult?> Index([FromRoute] string path, [FromQuery] string? version)
@@ -44,13 +44,14 @@ public class ExportController(
     /// </param>
     /// <param name="version">Optional version to export (e.g. v1, v2 etc). Latest version returned if not specified</param>
     /// <returns>JSON object representing result of export operation</returns>
-    [HttpGet("internal/{*path}")]
+    [HttpPost("internal/{*path}")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<ExportResult?> ControlledExport([FromRoute] string path, [FromQuery] string destinationKey,
-        [FromQuery] string? version)
+    public Task<ExportResult?> ControlledExport([FromRoute] string path, [FromQuery] string destinationKey,
+        [FromQuery] string? version = null)
     {
-        var exportKey = Uri.EscapeDataString(destinationKey);
-        return await ExportToLocation(path, version, exportKey);
+        // Avoid issues where we end up with additional empty keys path/to//key
+        if (destinationKey.EndsWith('/')) destinationKey = destinationKey[..^1];
+        return ExportToLocation(path, version, destinationKey);
     }
 
     private async Task<ExportResult?> ExportToLocation(string path, string? version, string exportKey)
@@ -60,7 +61,7 @@ public class ExportController(
         var result = new ExportResult
         {
             ArchivalGroupPath = path,
-            Destination = $"s3://{options.StagingBucket}/{exportKey}",
+            Destination = $"s3://{SafeJoin(options.StagingBucket, exportKey)}",
             StorageType = StorageTypes.S3,
             Version = storageMap.Version,
             Start = DateTime.Now
@@ -69,11 +70,11 @@ public class ExportController(
         {
             foreach (var file in storageMap.Files)
             {
-                var sourceKey = $"{storageMap.ObjectPath}/{file.Value.FullPath}";
-                var destKey = $"{exportKey}/{file.Key}";
+                var sourceKey = SafeJoin(storageMap.ObjectPath, file.Value.FullPath);
+                var destKey = SafeJoin(exportKey, file.Key);
                 var resp = await awsS3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket,
                     destKey);
-                result.Files.Add($"s3://{options.StagingBucket}/{destKey}");
+                result.Files.Add($"s3://{SafeJoin(options.StagingBucket, destKey)}");
             }
 
             result.End = DateTime.Now;
@@ -85,4 +86,6 @@ public class ExportController(
 
         return result;
     }
+
+    private static string SafeJoin(params string[] parts) => string.Join("/", parts).Replace("//", "/");
 }
