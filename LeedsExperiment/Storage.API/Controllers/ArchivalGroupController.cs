@@ -25,6 +25,6 @@ public class ArchivalGroupController(IFedora fedora) : Controller
     public async Task<ActionResult<ArchivalGroup?>> Index(string path, string? version = null)
     {
         var ag = await fedora.GetPopulatedArchivalGroup(path, version);
-        return ag;
+        return ag == null ? NotFound() : Ok(ag);
     }
 }

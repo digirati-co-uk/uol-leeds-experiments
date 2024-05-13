@@ -38,6 +38,7 @@ var apiConfig = builder.Configuration.GetSection("Fedora-API");
 builder.Services.Configure<FedoraApiOptions>(apiConfig);
 
 builder.Services.AddSingleton<IStorageMapper, OcflS3StorageMapper>();
+builder.Services.AddSingleton<IImportService, S3ImportService>();
 builder.Services.AddHttpClient<IFedora, FedoraWrapper>(client =>
 {
     var apiOptions = apiConfig.Get<FedoraApiOptions>();

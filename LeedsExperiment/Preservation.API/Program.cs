@@ -40,7 +40,8 @@ builder.Services
     .AddDefaultAWSOptions(builder.Configuration.GetAWSOptions())
     .AddAWSService<IAmazonS3>()
     .AddPreservationContext(builder.Configuration)
-    .AddHostedService<DepositExporterService>();
+    .AddHostedService<DepositExporterService>()
+    .AddSingleton<IImportService, S3ImportService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
@@ -62,7 +63,6 @@ var app = builder.Build();
 app.MapGet("/ping", () => "pong");
 
 // ImportJob
-app.MapGet("/deposits/{id}/importJobs/diff", (string id) => $"Get importJob JSON for files in Deposit {id}");
 app.MapPost("/deposits/{id}/importJobs", (string id) => "Import data into Fedora");
 
 app.TryRunMigrations(app.Configuration, app.Logger);

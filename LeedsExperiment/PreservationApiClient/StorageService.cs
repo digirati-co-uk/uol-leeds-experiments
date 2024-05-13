@@ -1,4 +1,5 @@
-﻿using Fedora.Abstractions;
+﻿using System.Net;
+using Fedora.Abstractions;
 using Preservation;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -73,7 +74,10 @@ public class StorageService : IPreservation
             apiPath += "?version=" + version;
         }
         var agApi = new Uri(apiPath, UriKind.Relative);
-        var ag = await httpClient.GetFromJsonAsync<ArchivalGroup>(agApi);
+        var response = await httpClient.GetAsync(agApi);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+
+        var ag = await response.Content.ReadFromJsonAsync<ArchivalGroup>();
         return ag;
     }
 

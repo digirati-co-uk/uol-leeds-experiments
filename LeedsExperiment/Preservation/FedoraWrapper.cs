@@ -667,6 +667,7 @@ public class FedoraWrapper : IFedora
     public async Task<ArchivalGroup?> GetPopulatedArchivalGroup(Uri uri, string? version = null, Transaction? transaction = null)
     {
         var versions = await GetFedoraVersions(uri);
+        if (versions == null) return null;
         var storageMap = await GetCacheableStorageMap(uri, version, true);
         MergeVersions(versions, storageMap.AllVersions);
         ObjectVersion? objectVersion = null;
@@ -733,12 +734,14 @@ public class FedoraWrapper : IFedora
         }
     }
 
-    private async Task<ObjectVersion[]> GetFedoraVersions(Uri uri)
+    private async Task<ObjectVersion[]?> GetFedoraVersions(Uri uri)
     {
         var request = MakeHttpRequestMessage(uri.VersionsUri(), HttpMethod.Get)
             .ForJsonLd();
 
         var response = await httpClient.SendAsync(request);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        
         var content = await response.Content.ReadAsStringAsync();
 
         using (JsonDocument jDoc = JsonDocument.Parse(content))
@@ -754,9 +757,7 @@ public class FedoraWrapper : IFedora
                 .OrderBy(ov => ov.MementoTimestamp)
                 .ToArray();
         }
-
     }
-
 
     private List<string> GetIdsFromContainsProperty(JsonElement element)
     {
