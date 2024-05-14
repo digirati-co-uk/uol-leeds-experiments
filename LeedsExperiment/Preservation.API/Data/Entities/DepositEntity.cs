@@ -26,7 +26,7 @@ public class DepositEntity
     /// </summary>
     public Uri S3Root { get; set; }
     
-    public string Status { get; set; } = "new";
+    public string Status { get; set; } = DepositStates.New;
     public string? SubmissionText { get; set; }
     public DateTime? DatePreserved { get; set; }
     public DateTime? DateExported { get; set; }
@@ -41,6 +41,7 @@ public static class DepositStates
     public const string Ready = "ready";
     public const string ExportError = "export-error";
 }
+
 public static class DepositEntityX
 {
     /// <summary>
