@@ -11,12 +11,12 @@ namespace Storage.API.Controllers;
 public class ImportController : Controller
 {
     private readonly IFedora fedora;
-    private readonly S3ImportService s3ImportService;
+    private readonly IImportService s3ImportService;
     private readonly ILogger<ImportController> logger;
 
     public ImportController(
         IFedora fedora,
-        S3ImportService s3ImportService,
+        IImportService s3ImportService,
         ILogger<ImportController> logger
     )
     {
