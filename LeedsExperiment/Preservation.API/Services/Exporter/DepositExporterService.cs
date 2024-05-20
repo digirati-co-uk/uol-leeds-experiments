@@ -1,4 +1,4 @@
-﻿namespace Preservation.API.Services;
+﻿namespace Preservation.API.Services.Exporter;
 
 /// <summary>
 /// Listens to queue export and handles export process

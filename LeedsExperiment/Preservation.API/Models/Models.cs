@@ -251,9 +251,9 @@ public class Deposit : PreservationResource
     public string[] PipelineJobs { get; set; }
 }
 
-public class ImportJob : PreservationResource
+public class PreservationImportJob : PreservationResource
 {
-    public override string Type { get; set; } = nameof(ImportJob);
+    public override string Type { get; set; } = "ImportJob";
     
     /// <summary>
     /// The Deposit that was used to generate this job, and to which it will be sent if executed.
@@ -381,36 +381,36 @@ public class ImportJobResult : PreservationResource
     /// </summary>
     [JsonPropertyOrder(18)]
     public Error[]? Errors { get; set; }
-    
+
     /// <summary>
     /// Populated once the job has finished successfully.
     /// </summary>
     [JsonPropertyOrder(19)]
-    public Container[]? ContainersAdded { get; set; }
+    public Container[] ContainersAdded { get; set; } = Array.Empty<Container>();
     
     /// <summary>
     /// Populated once the job has finished successfully.
     /// </summary>
     [JsonPropertyOrder(20)]
-    public Binary[]? BinariesAdded { get; set; }
+    public Binary[] BinariesAdded { get; set; } = Array.Empty<Binary>();
     
     /// <summary>
     /// Populated once the job has finished successfully.
     /// </summary>
     [JsonPropertyOrder(21)]
-    public Container[]? ContainersDeleted { get; set; }
+    public Container[] ContainersDeleted { get; set; } = Array.Empty<Container>();
     
     /// <summary>
     /// Populated once the job has finished successfully.
     /// </summary>
     [JsonPropertyOrder(22)]
-    public Binary[]? BinariesDeleted { get; set; }
+    public Binary[] BinariesDeleted { get; set; } = Array.Empty<Binary>();
     
     /// <summary>
     /// Populated once the job has finished successfully.
     /// </summary>
     [JsonPropertyOrder(23)]
-    public Binary[]? BinariesPatched { get; set; }
+    public Binary[] BinariesPatched { get; set; } = Array.Empty<Binary>();
 }
 
 /// <summary>

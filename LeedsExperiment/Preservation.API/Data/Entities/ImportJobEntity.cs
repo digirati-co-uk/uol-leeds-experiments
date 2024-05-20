@@ -4,8 +4,11 @@ public class ImportJobEntity
 {
     public required string Id { get; set; }
     
-    public required Uri OriginalImportJobId { get; set; }
+    public required Uri OriginalImportJobId { get; set; } // do we need to save this?
     
+    /// <summary>
+    /// Id of associated deposit
+    /// </summary>
     public string Deposit { get; set; }
     
     public required Uri DigitalObject { get; set; }
@@ -26,6 +29,11 @@ public class ImportJobEntity
     /// When the API finished processing the job
     /// </summary>
     public DateTime? DateFinished { get; set; }
+    
+    /// <summary>
+    /// Copy of JSON used to initiate this import job
+    /// </summary>
+    public required string ImportJobJson { get; set; }
     
     /// <summary>
     /// The version of the DigitalObject this job caused to be produced

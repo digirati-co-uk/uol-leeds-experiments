@@ -8,6 +8,8 @@ using Preservation.API;
 using Preservation.API.Data;
 using Preservation.API.Models;
 using Preservation.API.Services;
+using Preservation.API.Services.Exporter;
+using Preservation.API.Services.ImportJobs;
 using PreservationApiClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,7 @@ builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
 {
     client.BaseAddress = preservationConfig.StorageApiBaseAddress;
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromMinutes(30); // for import-job. Obviously too high in reality
 });
 
 builder.Services
@@ -41,7 +44,10 @@ builder.Services
     .AddAWSService<IAmazonS3>()
     .AddPreservationContext(builder.Configuration)
     .AddHostedService<DepositExporterService>()
-    .AddSingleton<IImportService, S3ImportService>();
+    .AddSingleton<IImportService, S3ImportService>()
+    .AddHostedService<ImportJobExecutorService>()
+    .AddScoped<ImportJobRunner>()
+    .AddSingleton<IImportJobQueue, InProcessImportJobQueue>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opts =>
@@ -61,9 +67,6 @@ builder.Services.AddSwaggerGen(opts =>
 var app = builder.Build();
 
 app.MapGet("/ping", () => "pong");
-
-// ImportJob
-app.MapPost("/deposits/{id}/importJobs", (string id) => "Import data into Fedora");
 
 app.TryRunMigrations(app.Configuration, app.Logger);
 app.UseSwagger();

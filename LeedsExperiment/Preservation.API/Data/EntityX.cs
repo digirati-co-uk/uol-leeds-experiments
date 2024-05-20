@@ -12,6 +12,10 @@ public static class EntityX
         CancellationToken cancellationToken = default) =>
         deposits.FindAsync([id], cancellationToken);
 
+    public static ValueTask<ImportJobEntity?> GetImportJob(this DbSet<ImportJobEntity> importJobs, string id,
+        CancellationToken cancellationToken = default) =>
+        importJobs.FindAsync([id], cancellationToken);
+
     public static DepositEntity SetModified(this DepositEntity entity, string lastModified = "leedsadmin")
     {
         entity.LastModifiedBy = lastModified;

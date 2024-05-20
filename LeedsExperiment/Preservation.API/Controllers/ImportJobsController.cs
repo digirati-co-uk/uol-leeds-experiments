@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Preservation.API.Data;
 using Preservation.API.Data.Entities;
+using Preservation.API.Models;
+using Preservation.API.Services;
+using Preservation.API.Services.ImportJobs;
 
 namespace Preservation.API.Controllers;
 
@@ -10,8 +13,13 @@ namespace Preservation.API.Controllers;
 public class ImportJobsController(
     PreservationContext dbContext,
     IPreservation preservation,
-    IImportService importService) : Controller
+    IImportJobQueue importJobQueue,
+    IImportService importService,
+    IIdentityService identityService,
+    ModelConverter modelConverter) : Controller
 {
+    private const string FedoraPrefix = "/fcrepo/rest";
+    
     /// <summary>
     /// Generate an <see cref="ImportJob"/> - a statement, in JSON form, of what changes you want carried out.
     /// Containers to add, Containers to delete, Binaries to add, Binaries to delete, Binaries to update.
@@ -28,9 +36,8 @@ public class ImportJobsController(
         var start = DateTime.UtcNow;
             
         var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
-        if (existingDeposit == null) return NotFound();
-        if (existingDeposit.IsBeingExported()) return BadRequest("Deposit is being exported");
-        if (existingDeposit.PreservationPath == null) return BadRequest("Must have DigitalObject to create diff");
+        var validationResult = ValidateDeposit(existingDeposit);
+        if (validationResult != null) return validationResult;
         
         // TODO - handle versions
         
@@ -38,9 +45,98 @@ public class ImportJobsController(
         var existingArchivalGroup = await GetExistingArchivalGroup(existingDeposit);
 
         // is PreservationPath correct here? Does it need to be the fcrepo/ path, or derived from that at least?
+        // I don't think so - the consumer of the PreservationAPI shouldn't ever know that path, we can rewrite on execute
+        // but should that happen here or in StorageAPI? Doing it here for now
         var importJob = await importService.GetImportJob(existingArchivalGroup, existingDeposit.S3Root,
             existingDeposit.PreservationPath, start);
+        
+        // TODO - convert to a PreservationImportJob
         return Ok(importJob);
+    }
+
+    /// <summary>
+    /// Execute the instructions in the <see cref="ImportJob"/> to create/update/delete relevant resources from
+    /// underlying storage
+    /// </summary>
+    /// <param name="id">The deposit Id this is related to</param>
+    /// <param name="importJob">JSON instructions to be carried out</param>
+    /// <returns>TODO - return val</returns>
+    [HttpPost]
+    public async Task<IActionResult> ExecuteImportJob([FromRoute] string id, [FromBody] ImportJob importJob,
+        CancellationToken cancellationToken)
+    {
+        var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
+        var validationResult = ValidateDeposit(existingDeposit);
+        if (validationResult != null) return validationResult;
+
+        // TODO - what other changes do we want to reject here? ArchivalGroupUri?
+        if (!importJob.Source.Equals(existingDeposit.S3Root.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest($"Only acceptable source is {existingDeposit.S3Root}");
+        }
+
+        // hmmmm
+        var archivalGroupPath = GetArchivalGroupPath(existingDeposit.PreservationPath);
+        var fedoraPath = $"{FedoraPrefix}/{archivalGroupPath}";
+        importJob.ArchivalGroupUri = new Uri(fedoraPath, UriKind.Relative);
+        
+        // Create a new identity
+        var entity = new ImportJobEntity
+        {
+            Id = await identityService.MintImportJobIdentity(cancellationToken),
+            OriginalImportJobId = new Uri("https://example.id/is-this-required"),
+            Deposit = id,
+            ImportJobJson = modelConverter.GetImportJson(importJob),
+            DigitalObject = existingDeposit.PreservationPath,
+        };
+        dbContext.ImportJobs.Add(entity);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        
+        // queue up for processing
+        await importJobQueue.QueueRequest(entity, cancellationToken);
+        
+        // convert entity to ImportJobResult
+        var importJobResult = modelConverter.ToImportJobResult(entity);
+
+        return CreatedAtAction(nameof(GetImportJobResult), new { id, importJobId = entity.Id }, importJobResult);
+    }
+
+    [HttpGet("results/{importJobId}")]
+    public async Task<IActionResult> GetImportJobResult([FromRoute] string id, [FromRoute] string importJobId,
+        CancellationToken cancellationToken)
+    {
+        var entity = await dbContext.ImportJobs.GetImportJob(importJobId, cancellationToken);
+        if (entity == null || !entity.Deposit.Equals(id, StringComparison.OrdinalIgnoreCase)) return NotFound();
+        
+        var importJobResult = modelConverter.ToImportJobResult(entity);
+        return Ok(importJobResult);
+    }
+
+    private IActionResult? ValidateDeposit(DepositEntity? existingDeposit)
+    {
+        if (existingDeposit == null) return NotFound();
+        if (existingDeposit.IsBeingExported()) return BadRequest("Deposit is being exported");
+        if (existingDeposit.PreservationPath == null) return BadRequest("Deposit requires DigitalObject");
+        return null;
+    }
+
+    private string GetArchivalGroupPath(Uri u)
+    {
+        // this feels wrong - we should be using consistent paths.
+        // Former is Preservation-Api path, latter is Fedora path. If it's anything else just use that
+        const string preservationApiPrefix = "/repository";
+
+        var path = u.AbsolutePath;
+        foreach (var s in new[] { preservationApiPrefix, FedoraPrefix })
+        {
+            if (path.StartsWith(s, StringComparison.OrdinalIgnoreCase))
+            {
+                path = path.Replace(s, string.Empty);
+                break;
+            }
+        }
+
+        return path[0] == '/' ? path[1..] : path;
     }
 
     private async Task<ArchivalGroup?> GetExistingArchivalGroup(DepositEntity existingDeposit)

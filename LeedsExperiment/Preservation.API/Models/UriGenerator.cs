@@ -18,6 +18,16 @@ public class UriGenerator(IHttpContextAccessor httpContextAccessor)
 
         return uriBuilder.Uri;
     }
+
+    [return: NotNullIfNotNull(nameof(storageUri))]
+    public Uri? GetRepositoryPath(string? storageUri, string? version = null)
+        => GetRepositoryPath(string.IsNullOrEmpty(storageUri) ? null : new Uri(storageUri, UriKind.RelativeOrAbsolute));
+
+    public Uri GetImportJobResultUri(string depositId, string importJobId)
+    {
+        var path = $"deposits/{depositId}/importJob/{importJobId}";
+        return GetUriBuilderForCurrentHost(path).Uri;
+    } 
     
     public Uri GetDepositPath(string depositId)
     {

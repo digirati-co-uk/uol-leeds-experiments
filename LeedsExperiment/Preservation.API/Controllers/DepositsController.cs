@@ -6,6 +6,7 @@ using Preservation.API.Data;
 using Preservation.API.Data.Entities;
 using Preservation.API.Models;
 using Preservation.API.Services;
+using Preservation.API.Services.Exporter;
 
 namespace Preservation.API.Controllers;
 
@@ -155,7 +156,7 @@ public class DepositsController(
     private async Task<DepositEntity> CreateNewDeposit(string? submissionText, Uri? digitalObject, bool isExport, 
         CancellationToken cancellationToken)
     {
-        var depositId = await identityService.MintNewIdentity(cancellationToken);
+        var depositId = await identityService.MintDepositIdentity(cancellationToken);
 
         // create a key in S3
         var putObject = new PutObjectRequest

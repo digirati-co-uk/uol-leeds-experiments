@@ -2,7 +2,7 @@
 using Preservation.API.Data;
 using Preservation.API.Data.Entities;
 
-namespace Preservation.API.Services;
+namespace Preservation.API.Services.Exporter;
 
 public class DepositExporter(IPreservation preservation, PreservationContext dbContext, ILogger<DepositExporter> logger)
 {

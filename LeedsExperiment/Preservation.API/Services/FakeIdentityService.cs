@@ -6,7 +6,7 @@ namespace Preservation.API.Services;
 
 public class FakeIdentityService(PreservationContext dbContext) : IIdentityService
 {
-    public async Task<string> MintNewIdentity(CancellationToken cancellationToken = default)
+    public async Task<string> MintDepositIdentity(CancellationToken cancellationToken = default)
     {
         while (true)
         {
@@ -17,9 +17,23 @@ public class FakeIdentityService(PreservationContext dbContext) : IIdentityServi
             }
         }
     }
+    
+    public async Task<string> MintImportJobIdentity(CancellationToken cancellationToken = default)
+    {
+        while (true)
+        {
+            var identityCandidate = Identifiable.Generate();
+            if (!await dbContext.ImportJobs.AnyAsync(d => d.Id == identityCandidate, cancellationToken))
+            {
+                return identityCandidate;
+            }
+        }
+    }
 }
 
 public interface IIdentityService
 {
-    Task<string> MintNewIdentity(CancellationToken cancellationToken = default);
+    Task<string> MintDepositIdentity(CancellationToken cancellationToken = default);
+
+    Task<string> MintImportJobIdentity(CancellationToken cancellationToken = default);
 }

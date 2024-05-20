@@ -1,4 +1,6 @@
-﻿using Fedora.Abstractions;
+﻿using System.Text.Json;
+using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
 using Preservation.API.Data.Entities;
 
@@ -10,6 +12,10 @@ namespace Preservation.API.Models;
 /// <param name="uriGenerator">Helper for generating various URIs</param>
 public class ModelConverter(UriGenerator uriGenerator)
 {
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+
+    public string GetImportJson(ImportJob importJob) => JsonSerializer.Serialize(importJob, settings);
+    
     public PreservationResource ToPreservationResource(Fedora.Abstractions.Resource storageResource, Uri requestPath)
     {
         switch (storageResource)
@@ -54,6 +60,56 @@ public class ModelConverter(UriGenerator uriGenerator)
                 : new Uri($"http://example.id/{entity.LastModifiedBy}"),
         };
 
+    public ImportJobResult ToImportJobResult(ImportJobEntity entity) =>
+        new()
+        {
+            Id = uriGenerator.GetImportJobResultUri(entity.Deposit, entity.Id),
+            Created = entity.DateSubmitted ?? DateTime.MinValue,
+            CreatedBy = new Uri($"http://example.id/todo"),
+            DigitalObject = entity.DigitalObject,
+            Deposit = uriGenerator.GetDepositPath(entity.Deposit),
+            OriginalImportJobId = entity.OriginalImportJobId,
+            Status = entity.Status,
+            Errors = string.IsNullOrEmpty(entity.Errors) ? null : JsonSerializer.Deserialize<Error[]>(entity.Errors),
+            ContainersAdded = string.IsNullOrEmpty(entity.ContainersAdded)
+                ? Array.Empty<Container>()
+                : JsonSerializer.Deserialize<Container[]>(entity.ContainersAdded)!,
+            ContainersDeleted = string.IsNullOrEmpty(entity.ContainersDeleted)
+                ? Array.Empty<Container>()
+                : JsonSerializer.Deserialize<Container[]>(entity.ContainersDeleted)!,
+            BinariesAdded = string.IsNullOrEmpty(entity.BinariesAdded)
+                ? Array.Empty<Binary>()
+                : JsonSerializer.Deserialize<Binary[]>(entity.BinariesAdded)!,
+            BinariesDeleted = string.IsNullOrEmpty(entity.BinariesDeleted)
+                ? Array.Empty<Binary>()
+                : JsonSerializer.Deserialize<Binary[]>(entity.BinariesDeleted)!,
+            BinariesPatched = string.IsNullOrEmpty(entity.BinariesPatched)
+                ? Array.Empty<Binary>()
+                : JsonSerializer.Deserialize<Binary[]>(entity.BinariesPatched)!,
+        };
+
+    /*public PreservationImportJob ToPreservationResource(ImportJob importJob) //, Uri deposit)
+        => new()
+        {
+            DigitalObject = importJob.ArchivalGroupUri!,
+            Created = importJob.DiffStart,
+            CreatedBy = new Uri($"http://example.id/need-to-set"),
+            BinariesToAdd = importJob.FilesToAdd.Select(f => ToPresentationBinary(f)).ToArray(),
+            BinariesToDelete = importJob.FilesToDelete.Select(f => ToPresentationBinary(f)).ToArray(),
+            BinariesToPatch = importJob.FilesToPatch.Select(f => ToPresentationBinary(f)).ToArray(),
+            ContainersToDelete = importJob.ContainersToDelete.Select(c => ToPresentationContainer(c)).ToArray(),
+            ContainersToAdd = importJob.ContainersToAdd.Select(c => ToPresentationContainer(c)).ToArray(),
+        };
+
+    public ImportJobEntity ToEntity(PreservationImportJob preservationImportJob, string id) =>
+        new()
+        {
+            Id = id,
+            DigitalObject = preservationImportJob.DigitalObject,
+            ImportJobJson = JsonSerializer.Serialize(preservationImportJob),
+            OriginalImportJobId = preservationImportJob.Id!,
+        };*/
+
     private DigitalObjectVersion? ToDigitalObjectVersion(ObjectVersion? objectVersion, Uri repositoryUri)
     {
         if (objectVersion == null) return null;
@@ -82,6 +138,24 @@ public class ModelConverter(UriGenerator uriGenerator)
         MapBasicsFromStorageResource(binary, fedoraBinary);
         return binary;
     }
+
+    private Binary ToPresentationBinary(BinaryFile binaryFile) =>
+        new()
+        {
+            Id = uriGenerator.GetRepositoryPath(binaryFile.Path), // is this right? Should differ from below?
+            Content = uriGenerator.GetRepositoryPath(binaryFile.Path),
+            Name = binaryFile.Name,
+            Digest = binaryFile.Digest,
+            PartOf = uriGenerator.GetRepositoryPath(binaryFile.Parent)
+        };
+
+    private Container ToPresentationContainer(ContainerDirectory containerDirectory) =>
+        new()
+        {
+            Id = uriGenerator.GetRepositoryPath(containerDirectory.Path),
+            Name = containerDirectory.Name,
+            PartOf = uriGenerator.GetRepositoryPath(containerDirectory.Parent),
+        };
 
     private Container ToPresentationContainer(Fedora.Abstractions.Container fedoraContainer)
     {

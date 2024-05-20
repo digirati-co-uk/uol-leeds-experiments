@@ -2,7 +2,7 @@
 using Preservation.API.Controllers;
 using Preservation.API.Data.Entities;
 
-namespace Preservation.API.Services;
+namespace Preservation.API.Services.Exporter;
 
 public interface IExportQueue
 {

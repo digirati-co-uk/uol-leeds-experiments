@@ -30,6 +30,7 @@ public class PreservationContext(DbContextOptions<PreservationContext> options) 
             builder.Property(ij => ij.BinariesAdded).HasColumnType("jsonb");
             builder.Property(ij => ij.BinariesPatched).HasColumnType("jsonb");
             builder.Property(ij => ij.BinariesDeleted).HasColumnType("jsonb");
+            builder.Property(ij => ij.ImportJobJson).HasColumnType("jsonb");
         });
     }
 }
