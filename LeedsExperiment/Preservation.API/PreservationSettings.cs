@@ -4,6 +4,8 @@ public class PreservationSettings
 {
     public required Uri StorageApiBaseAddress { get; set; }
     
+    public required Uri PreservationApiBaseAddress { get; set; }
+    
     /// <summary>
     /// Bucket to use for storing deposits
     /// </summary>

@@ -45,25 +45,33 @@ public class StorageService : IPreservation
         // This could be a Container, an ArchivalGroup, or a Binary
         var content = await response.Content.ReadAsStringAsync();
 
-        using (JsonDocument jDoc = JsonDocument.Parse(content))
+        try
         {
-            if (jDoc.RootElement.TryGetProperty("type", out JsonElement typeValue))
+            using (JsonDocument jDoc = JsonDocument.Parse(content))
             {
-                string type = typeValue.ToString();
-                switch (type)
+                if (jDoc.RootElement.TryGetProperty("type", out JsonElement typeValue))
                 {
-                    case "Container":
-                    case "RepositoryRoot":
-                        return jDoc.RootElement.Deserialize<Container>();
-                    case "Binary":
-                        return jDoc.RootElement.Deserialize<Binary>();
-                    case "ArchivalGroup":
-                        return jDoc.RootElement.Deserialize<ArchivalGroup>();
-                    default:
-                        return null;
+                    string type = typeValue.ToString();
+                    switch (type)
+                    {
+                        case "Container":
+                        case "RepositoryRoot":
+                            return jDoc.RootElement.Deserialize<Container>();
+                        case "Binary":
+                            return jDoc.RootElement.Deserialize<Binary>();
+                        case "ArchivalGroup":
+                            return jDoc.RootElement.Deserialize<ArchivalGroup>();
+                        default:
+                            return null;
+                    }
                 }
             }
         }
+        catch (JsonException)
+        {
+            // no-op, will return null
+        }
+
         return null;
     }
 

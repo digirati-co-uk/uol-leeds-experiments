@@ -1,9 +1,20 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Options;
 
 namespace Preservation.API.Models;
 
-public class UriGenerator(IHttpContextAccessor httpContextAccessor)
+public class UriGenerator
 {
+    private readonly IHttpContextAccessor httpContextAccessor;
+    private readonly PreservationSettings preservationSettings;
+
+    public UriGenerator(IHttpContextAccessor httpContextAccessor, IOptions<PreservationSettings> options)
+    {
+        this.httpContextAccessor = httpContextAccessor;
+        preservationSettings = options.Value;
+    }
+    
+
     [return: NotNullIfNotNull(nameof(storageUri))]
     public Uri? GetRepositoryPath(Uri? storageUri, string? version = null)
     {
@@ -37,13 +48,26 @@ public class UriGenerator(IHttpContextAccessor httpContextAccessor)
     
     private UriBuilder GetUriBuilderForCurrentHost(string path)
     {
-        var request = httpContextAccessor.HttpContext.Request;
-        var uriBuilder = new UriBuilder(request.Scheme, request.Host.Host)
+        var request = httpContextAccessor.HttpContext?.Request;
+        if (request != null)
         {
-            Port = request.Host.Port ?? 80,
-            Path = path
-        };
-        return uriBuilder;
+            var uriBuilderFromContext = new UriBuilder(request.Scheme, request.Host.Host)
+            {
+                Port = request.Host.Port ?? 80,
+                Path = path
+            };
+            return uriBuilderFromContext;
+        }
+        else
+        {
+            var baseAddress = preservationSettings.PreservationApiBaseAddress;
+            var uriBuilderFromConfig = new UriBuilder(baseAddress.Scheme, baseAddress.Host)
+            {
+                Port = baseAddress.Port,
+            };
+
+            return uriBuilderFromConfig;
+        }
     }
 
     private static string GetPreservationPath(Uri storageUri)

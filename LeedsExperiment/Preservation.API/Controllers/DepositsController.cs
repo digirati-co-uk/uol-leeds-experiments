@@ -76,7 +76,7 @@ public class DepositsController(
     [HttpPatch("{id}")]
     [Produces("application/json")]
     [Produces<Deposit>]
-    public async Task<IActionResult> Create([FromRoute] string id, [FromBody] PatchDeposit changes,
+    public async Task<IActionResult> Update([FromRoute] string id, [FromBody] PatchDeposit changes,
         CancellationToken cancellationToken)
     {
         var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
@@ -97,9 +97,9 @@ public class DepositsController(
         }
 
         existingDeposit.SetModified();
-
         await dbContext.SaveChangesAsync(cancellationToken);
-        return Ok(existingDeposit);
+        
+        return Ok(modelConverter.ToDeposit(existingDeposit));
     }
 
     /// <summary>
@@ -179,7 +179,7 @@ public class DepositsController(
             Status = isExport ? DepositStates.Exporting : DepositStates.New,
             S3Root = putObject.GetS3Uri(),
             SubmissionText = submissionText,
-            PreservationPath = digitalObject, // TODO handle this/validation etc
+            PreservationPath = digitalObject,
             CreatedBy = "leedsadmin",
         };
         dbContext.Deposits.Add(depositEntity);

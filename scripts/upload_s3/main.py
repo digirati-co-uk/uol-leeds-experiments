@@ -9,10 +9,11 @@ session = boto3.Session(profile_name='uol')
 s3 = session.client('s3')
 
 
-@click.command(context_settings=dict(ignore_unknown_options=True))
-@click.option("--folder", "-f", required=True)
-@click.option("--root-key", "-r", required=True)
-def handle_request(folder: str, root_key: str):
+@click.command()
+@click.option("--folder", default="c:\\temp\\uol\\payloads\\")
+@click.option("--deposit", required=True)
+def handle_request(folder: str, deposit: str):
+    root_key = f"deposits/dev/{deposit}/"
     upload_folder(folder, root_key)
 
 
@@ -50,4 +51,4 @@ def upload_folder(folder: str, root_key: str):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    upload_folder("c:\\temp\\uol\\payloads\\", "deposits/dev/dxfrsrjs/")
+    handle_request()

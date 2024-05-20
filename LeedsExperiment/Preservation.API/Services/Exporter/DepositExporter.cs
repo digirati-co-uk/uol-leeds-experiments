@@ -14,7 +14,7 @@ public class DepositExporter(IPreservation preservation, PreservationContext dbC
         try
         {
             var exportKey = deposit.S3Root.AbsolutePath;
-            var digitalObject = deposit.PreservationPath!.AbsolutePath;
+            var digitalObject = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(deposit.PreservationPath)!.OriginalString;
             var stopWatch = Stopwatch.StartNew();
             var exportResult = await preservation.Export(digitalObject, exportRequest.Version, exportKey);
             stopWatch.Stop();
