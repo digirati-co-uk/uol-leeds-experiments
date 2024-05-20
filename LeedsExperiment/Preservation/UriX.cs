@@ -11,7 +11,8 @@ namespace Preservation
 
         public static string Slug(this Uri uri)
         {
-            return uri.Segments.Last().Trim('/');
+            var uriSegments = uri.IsAbsoluteUri ? uri.Segments : uri.OriginalString.Split('/');
+            return uriSegments.Last().Trim('/');
         }
     }
 }

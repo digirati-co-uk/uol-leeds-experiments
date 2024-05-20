@@ -9,6 +9,7 @@ namespace PreservationApiClient;
 public class StorageService : IPreservation
 {
     private readonly HttpClient httpClient;
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
 
     // This is horrible and wrong
     private const string repositoryPrefix = "api/repository/";
@@ -130,11 +131,20 @@ public class StorageService : IPreservation
     {
         var apiPath = $"{importPrefix}__import";
         var response = await httpClient.PostAsJsonAsync(new Uri(apiPath, UriKind.Relative), importJob);
-        var processedImportJob = await response.Content.ReadFromJsonAsync<ImportJob>();
-        if (processedImportJob != null)
+        var responseString = await response.Content.ReadAsStringAsync();
+        try
         {
-            return processedImportJob;
+            var processedImportJob = JsonSerializer.Deserialize<ImportJob>(responseString, Settings);
+            if (processedImportJob != null)
+            {
+                return processedImportJob;
+            }
         }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(responseString, ex);
+        }
+        
         throw new InvalidOperationException("Could not get a processed import object back");
     }
 

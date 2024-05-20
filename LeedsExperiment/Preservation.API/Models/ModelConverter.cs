@@ -15,6 +15,9 @@ public class ModelConverter(UriGenerator uriGenerator)
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public string GetImportJson(ImportJob importJob) => JsonSerializer.Serialize(importJob, settings);
+
+    public ImportJob GetImportJob(ImportJobEntity importJob) =>
+        JsonSerializer.Deserialize<ImportJob>(importJob.ImportJobJson, settings)!;
     
     public PreservationResource ToPreservationResource(Fedora.Abstractions.Resource storageResource, Uri requestPath)
     {
@@ -139,7 +142,7 @@ public class ModelConverter(UriGenerator uriGenerator)
         return binary;
     }
 
-    private Binary ToPresentationBinary(BinaryFile binaryFile) =>
+    public Binary ToPresentationBinary(BinaryFile binaryFile) =>
         new()
         {
             Id = uriGenerator.GetRepositoryPath(binaryFile.Path), // is this right? Should differ from below?
@@ -149,7 +152,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             PartOf = uriGenerator.GetRepositoryPath(binaryFile.Parent)
         };
 
-    private Container ToPresentationContainer(ContainerDirectory containerDirectory) =>
+    public Container ToPresentationContainer(ContainerDirectory containerDirectory) =>
         new()
         {
             Id = uriGenerator.GetRepositoryPath(containerDirectory.Path),

@@ -18,8 +18,6 @@ public class ImportJobsController(
     IIdentityService identityService,
     ModelConverter modelConverter) : Controller
 {
-    private const string FedoraPrefix = "/fcrepo/rest";
-    
     /// <summary>
     /// Generate an <see cref="ImportJob"/> - a statement, in JSON form, of what changes you want carried out.
     /// Containers to add, Containers to delete, Binaries to add, Binaries to delete, Binaries to update.
@@ -65,6 +63,7 @@ public class ImportJobsController(
     public async Task<IActionResult> ExecuteImportJob([FromRoute] string id, [FromBody] ImportJob importJob,
         CancellationToken cancellationToken)
     {
+        // TODO - take a PreservationImportJob?
         var existingDeposit = await dbContext.Deposits.GetDeposit(id, cancellationToken);
         var validationResult = ValidateDeposit(existingDeposit);
         if (validationResult != null) return validationResult;
@@ -75,10 +74,9 @@ public class ImportJobsController(
             return BadRequest($"Only acceptable source is {existingDeposit.S3Root}");
         }
 
-        // hmmmm
-        var archivalGroupPath = GetArchivalGroupPath(existingDeposit.PreservationPath);
-        var fedoraPath = $"{FedoraPrefix}/{archivalGroupPath}";
-        importJob.ArchivalGroupUri = new Uri(fedoraPath, UriKind.Relative);
+        // hmmmm, preservation-api shouldn't know about Fedora.
+        importJob.ArchivalGroupUri =
+            ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(existingDeposit.PreservationPath);
         
         // Create a new identity
         var entity = new ImportJobEntity
@@ -118,25 +116,6 @@ public class ImportJobsController(
         if (existingDeposit.IsBeingExported()) return BadRequest("Deposit is being exported");
         if (existingDeposit.PreservationPath == null) return BadRequest("Deposit requires DigitalObject");
         return null;
-    }
-
-    private string GetArchivalGroupPath(Uri u)
-    {
-        // this feels wrong - we should be using consistent paths.
-        // Former is Preservation-Api path, latter is Fedora path. If it's anything else just use that
-        const string preservationApiPrefix = "/repository";
-
-        var path = u.AbsolutePath;
-        foreach (var s in new[] { preservationApiPrefix, FedoraPrefix })
-        {
-            if (path.StartsWith(s, StringComparison.OrdinalIgnoreCase))
-            {
-                path = path.Replace(s, string.Empty);
-                break;
-            }
-        }
-
-        return path[0] == '/' ? path[1..] : path;
     }
 
     private async Task<ArchivalGroup?> GetExistingArchivalGroup(DepositEntity existingDeposit)

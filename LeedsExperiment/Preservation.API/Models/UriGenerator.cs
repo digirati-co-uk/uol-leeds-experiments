@@ -48,7 +48,7 @@ public class UriGenerator(IHttpContextAccessor httpContextAccessor)
 
     private static string GetPreservationPath(Uri storageUri)
     {
-        var storageUriAbsolutePath = storageUri.AbsolutePath;
+        var storageUriAbsolutePath = storageUri.IsAbsoluteUri ? storageUri.AbsolutePath : storageUri.OriginalString;
         const string storageApiPrefix = "/api";
         return Uri.UnescapeDataString(storageUriAbsolutePath[..4] == storageApiPrefix
             ? storageUriAbsolutePath[4..]

@@ -2,6 +2,7 @@
 using Fedora.Abstractions;
 using Fedora.ApiModel;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Preservation;
 
 namespace Storage.API.Controllers;
@@ -13,15 +14,18 @@ public class ImportController : Controller
     private readonly IFedora fedora;
     private readonly IImportService s3ImportService;
     private readonly ILogger<ImportController> logger;
+    private readonly FedoraApiOptions fedoraApiSettings;
 
     public ImportController(
         IFedora fedora,
         IImportService s3ImportService,
+        IOptions<FedoraApiOptions> fedoraApiOptions,
         ILogger<ImportController> logger
     )
     {
         this.fedora = fedora;
         this.s3ImportService = s3ImportService;
+        fedoraApiSettings = fedoraApiOptions.Value;
         this.logger = logger;
     }
 
@@ -70,7 +74,9 @@ public class ImportController : Controller
             // it doesn't exist - but we still need to check that:
             // - it has an immediate parent container
             // - that container is not itself an archival group or part of one
-            var npp = new NameAndParentPath(archivalGroupUri.AbsolutePath);
+            var npp = new NameAndParentPath(archivalGroupUri.IsAbsoluteUri
+                ? archivalGroupUri.AbsolutePath
+                : archivalGroupUri.OriginalString);
             if (npp.ParentPath == null)
             {
                 throw new InvalidOperationException($"No parent object for {archivalGroupUri}");
@@ -155,6 +161,9 @@ public class ImportController : Controller
             throw new InvalidOperationException("No URI supplied for ArchivalGroup");
         }
 
+        // Consumer has only supplied to AG path - prepend the Fedora path
+        importJob.ArchivalGroupUri = EnsureFedoraPath(importJob.ArchivalGroupUri);
+        
         importJob.Start = DateTime.Now;
         var transaction = await fedora.BeginTransaction();
         ArchivalGroup? archivalGroup = await GetValidatedArchivalGroupForImportJob(importJob.ArchivalGroupUri, transaction);
@@ -192,6 +201,7 @@ public class ImportController : Controller
         {
             foreach (var container in importJob.ContainersToAdd.OrderBy(cd => cd.Path))
             {
+                container.Parent = EnsureFedoraPath(container.Parent);
                 logger.LogInformation("Creating container {path}", container.Path);
                 var fedoraContainer = await fedora.CreateContainer(container, transaction);
                 logger.LogInformation("Container created at {location}", fedoraContainer!.Location);
@@ -203,6 +213,7 @@ public class ImportController : Controller
             // create files
             foreach (var binaryFile in importJob.FilesToAdd)
             {
+                binaryFile.Parent = EnsureFedoraPath(binaryFile.Parent);
                 logger.LogInformation("Adding file {path}", binaryFile.Path);
                 var fedoraBinary = await fedora.PutBinary(binaryFile, transaction);
                 logger.LogInformation("Binary created at {location}", fedoraBinary!.Location);
@@ -215,6 +226,7 @@ public class ImportController : Controller
             // nothing _arbitrary_
             foreach (var binaryFile in importJob.FilesToPatch)
             {
+                binaryFile.Parent = EnsureFedoraPath(binaryFile.Parent);
                 logger.LogInformation("Patching file {path}", binaryFile.Path);
                 var fedoraBinary = await fedora.PutBinary(binaryFile, transaction);
                 logger.LogInformation("Binary PATCHed at {location}", fedoraBinary!.Location);
@@ -224,6 +236,7 @@ public class ImportController : Controller
             // delete files
             foreach (var binaryFile in importJob.FilesToDelete)
             {
+                binaryFile.Parent = EnsureFedoraPath(binaryFile.Parent);
                 logger.LogInformation("Deleting file {path}", binaryFile.Path);
                 var location = archivalGroup!.GetResourceUri(binaryFile.Path);
                 await fedora.Delete(location, transaction);
@@ -238,6 +251,7 @@ public class ImportController : Controller
             // but might come from other importJob use.
             foreach (var container in importJob.ContainersToDelete)
             {
+                container.Parent = EnsureFedoraPath(container.Parent);
                 logger.LogInformation("Deleting container {path}", container.Path);
                 var location = archivalGroup!.GetResourceUri(container.Path);
                 await fedora.Delete(location, transaction);
@@ -257,4 +271,8 @@ public class ImportController : Controller
         importJob.End = DateTime.Now;
         return importJob;
     }
+
+    private Uri EnsureFedoraPath(Uri candidate) => candidate.IsAbsoluteUri
+        ? candidate
+        : new Uri($"{fedoraApiSettings.ApiRoot}{candidate.OriginalString}");
 }

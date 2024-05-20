@@ -50,6 +50,7 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             Source = sourceUri.ToString(),
             DiffStart = diffStart
         };
+        
         if (archivalGroup == null)
         {
             // This is a new object
