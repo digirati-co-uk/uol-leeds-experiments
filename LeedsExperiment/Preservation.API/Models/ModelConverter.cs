@@ -74,6 +74,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             DigitalObject = entity.DigitalObject,
             Deposit = uriGenerator.GetDepositPath(entity.Deposit),
             OriginalImportJobId = entity.OriginalImportJobId,
+            ImportJob = new Uri("https://todo"),
             Status = entity.Status,
             Errors = string.IsNullOrEmpty(entity.Errors) ? null : JsonSerializer.Deserialize<Error[]>(entity.Errors),
             ContainersAdded = string.IsNullOrEmpty(entity.ContainersAdded)

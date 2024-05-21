@@ -35,7 +35,7 @@ public class UriGenerator
 
     public Uri GetImportJobResultUri(string depositId, string importJobId)
     {
-        var path = $"deposits/{depositId}/importJob/{importJobId}";
+        var path = $"deposits/{depositId}/importJob/results/{importJobId}";
         return GetUriBuilderForCurrentHost(path).Uri;
     } 
     
