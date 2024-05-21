@@ -60,7 +60,7 @@ public class ImportJobsController(
     /// <param name="importJob">JSON instructions to be carried out</param>
     /// <returns>TODO - return val</returns>
     [HttpPost]
-    public async Task<IActionResult> ExecuteImportJob([FromRoute] string id, [FromBody] ImportJob importJob,
+    public async Task<IActionResult> ExecuteImportJob([FromRoute] string id, [FromBody] PreservationImportJob importJob,
         CancellationToken cancellationToken)
     {
         // TODO - take a PreservationImportJob?
@@ -68,15 +68,8 @@ public class ImportJobsController(
         var validationResult = ValidateDeposit(existingDeposit);
         if (validationResult != null) return validationResult;
 
-        // TODO - what other changes do we want to reject here? ArchivalGroupUri?
-        if (!importJob.Source.Equals(existingDeposit.S3Root.ToString(), StringComparison.OrdinalIgnoreCase))
-        {
-            return BadRequest($"Only acceptable source is {existingDeposit.S3Root}");
-        }
-
-        // hmmmm, preservation-api shouldn't know about Fedora.
-        importJob.ArchivalGroupUri =
-            ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(existingDeposit.PreservationPath);
+        importJob.DigitalObject =
+            ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(existingDeposit.PreservationPath)!;
         
         // Create a new identity
         var entity = new ImportJobEntity

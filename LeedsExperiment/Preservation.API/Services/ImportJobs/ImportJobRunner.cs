@@ -16,10 +16,16 @@ public class ImportJobRunner(
     {
         logger.LogInformation("This would execute {ImportJobId}", importJobId);
         var importJobEntity = await dbContext.ImportJobs.GetImportJob(importJobId, stoppingToken);
-
         if (importJobEntity == null)
         {
             logger.LogInformation("Import job {ImportJobId} not found", importJobId);
+            return;
+        }
+
+        var depositEntity = await dbContext.Deposits.GetDeposit(importJobEntity.Deposit, stoppingToken);
+        if (depositEntity == null)
+        {
+            logger.LogInformation("Deposit {DepositId} not found", importJobEntity.Deposit);
             return;
         }
         
@@ -32,7 +38,7 @@ public class ImportJobRunner(
         {
             // Call Storage-API, which might take a while so need a longer timeout
             var isUpdate = IsUpdate(importJobEntity);
-            var importJob = modelConverter.GetImportJob(importJobEntity);
+            var importJob = modelConverter.GetImportJob(importJobEntity, depositEntity);
             MakeParentsRelative(importJob);
 
             importJob.IsUpdate = await isUpdate;
@@ -63,7 +69,7 @@ public class ImportJobRunner(
                 Message = ex.Message
             };
 
-            importJobEntity.Errors = JsonSerializer.Serialize(error);
+            importJobEntity.Errors = JsonSerializer.Serialize(new[] { error });
             importJobEntity.Status = ImportJobStates.CompletedWithErrors;
         }
 

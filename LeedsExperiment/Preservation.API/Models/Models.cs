@@ -18,10 +18,10 @@ public abstract class PreservationResource
     public abstract string Type { get; set; }
     
     [JsonPropertyOrder(3)]
-    public DateTime Created { get; set; }
+    public DateTime? Created { get; set; }
     
     [JsonPropertyOrder(4)]
-    public Uri CreatedBy { get; set; }
+    public Uri? CreatedBy { get; set; }
     
     [JsonPropertyOrder(5)]
     public DateTime? LastModified { get; set; }

@@ -14,11 +14,28 @@ public class ModelConverter(UriGenerator uriGenerator)
 {
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
-    public string GetImportJson(ImportJob importJob) => JsonSerializer.Serialize(importJob, settings);
+    public string GetImportJson(PreservationImportJob importJob) => JsonSerializer.Serialize(importJob, settings);
 
-    public ImportJob GetImportJob(ImportJobEntity importJob) =>
-        JsonSerializer.Deserialize<ImportJob>(importJob.ImportJobJson, settings)!;
-    
+    public ImportJob GetImportJob(ImportJobEntity importJobEntity, DepositEntity deposit)
+    {
+        var preservationImportJob =
+            JsonSerializer.Deserialize<PreservationImportJob>(importJobEntity.ImportJobJson, settings)!;
+
+        var importJob = new ImportJob
+        {
+            Source = deposit.S3Root.ToString(),
+            StorageType = "S3",
+            ArchivalGroupPath = ArchivalGroupUriHelpers.GetArchivalGroupPath(preservationImportJob.DigitalObject),
+            ArchivalGroupUri = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(preservationImportJob.DigitalObject),
+            ContainersToAdd = preservationImportJob.ContainersToAdd.Select(ToStorageContainer).ToList(),
+            ContainersToDelete = preservationImportJob.ContainersToDelete.Select(ToStorageContainer).ToList(),
+            FilesToAdd = preservationImportJob.BinariesToAdd.Select(b => ToStorageFile(b, deposit)).ToList(),
+            FilesToDelete = preservationImportJob.BinariesToDelete.Select(b => ToStorageFile(b, deposit)).ToList(),
+            FilesToPatch = preservationImportJob.BinariesToPatch.Select(b => ToStorageFile(b, deposit)).ToList(),
+        };
+        return importJob;
+    }
+
     public PreservationResource ToPreservationResource(Fedora.Abstractions.Resource storageResource, Uri requestPath)
     {
         switch (storageResource)
@@ -165,6 +182,30 @@ public class ModelConverter(UriGenerator uriGenerator)
             Name = containerDirectory.Name,
             PartOf = uriGenerator.GetRepositoryPath(containerDirectory.Parent),
         };
+    
+    private ContainerDirectory ToStorageContainer(Container container) =>
+        new()
+        {
+            Name = container.Name!,
+            Parent = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(container.PartOf!),
+            Path = ArchivalGroupUriHelpers.GetArchivalGroupPath(container.Id!.ToString().Replace(container.PartOf!.ToString(), string.Empty)),
+        };
+    
+    private BinaryFile ToStorageFile(Binary binary, DepositEntity depositEntity)
+    {
+        var path = ArchivalGroupUriHelpers.GetArchivalGroupPath(binary.Id!.ToString()
+            .Replace(binary.PartOf!.ToString(), string.Empty));
+        return new BinaryFile
+        {
+            Name = binary.Name!,
+            Parent = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(binary.PartOf!),
+            Path = path,
+            ContentType = "preservation/not-implemented",
+            StorageType = "S3",
+            Digest = binary.Digest,
+            ExternalLocation = $"{depositEntity.S3Root.ToString()}{path}",
+        };
+    }
 
     private Container ToPresentationContainer(Fedora.Abstractions.Container fedoraContainer)
     {
