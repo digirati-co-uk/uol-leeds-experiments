@@ -70,7 +70,7 @@ public class ModelConverter(UriGenerator uriGenerator)
         {
             Id = uriGenerator.GetImportJobResultUri(entity.Deposit, entity.Id),
             Created = entity.DateSubmitted ?? DateTime.MinValue,
-            CreatedBy = new Uri($"http://example.id/todo"),
+            CreatedBy = new Uri("https://todo"),
             DigitalObject = entity.DigitalObject,
             Deposit = uriGenerator.GetDepositPath(entity.Deposit),
             OriginalImportJobId = entity.OriginalImportJobId,
@@ -93,20 +93,24 @@ public class ModelConverter(UriGenerator uriGenerator)
                 : JsonSerializer.Deserialize<Binary[]>(entity.BinariesPatched)!,
         };
 
-    /*public PreservationImportJob ToPreservationResource(ImportJob importJob) //, Uri deposit)
+    public PreservationImportJob ToPreservationResource(ImportJob importJob, string depositId)
         => new()
         {
+            Id = new Uri("https://todo"),
             DigitalObject = importJob.ArchivalGroupUri!,
+            Deposit = uriGenerator.GetDepositPath(depositId),
             Created = importJob.DiffStart,
-            CreatedBy = new Uri($"http://example.id/need-to-set"),
-            BinariesToAdd = importJob.FilesToAdd.Select(f => ToPresentationBinary(f)).ToArray(),
-            BinariesToDelete = importJob.FilesToDelete.Select(f => ToPresentationBinary(f)).ToArray(),
-            BinariesToPatch = importJob.FilesToPatch.Select(f => ToPresentationBinary(f)).ToArray(),
-            ContainersToDelete = importJob.ContainersToDelete.Select(c => ToPresentationContainer(c)).ToArray(),
-            ContainersToAdd = importJob.ContainersToAdd.Select(c => ToPresentationContainer(c)).ToArray(),
+            CreatedBy = new Uri("https://todo"),
+            BinariesToAdd = importJob.FilesToAdd.Select(ToPresentationBinary).ToArray(),
+            BinariesToDelete = importJob.FilesToDelete.Select(ToPresentationBinary).ToArray(),
+            BinariesToPatch = importJob.FilesToPatch.Select(ToPresentationBinary).ToArray(),
+            ContainersToDelete = importJob.ContainersToDelete.Select(ToPresentationContainer).ToArray(),
+            ContainersToAdd = importJob.ContainersToAdd.Select(ToPresentationContainer).ToArray(),
+            SourceVersion = ToDigitalObjectVersion(importJob.DiffVersion,
+                uriGenerator.GetRepositoryPath(importJob.ArchivalGroupUri)!),
         };
 
-    public ImportJobEntity ToEntity(PreservationImportJob preservationImportJob, string id) =>
+    /*public ImportJobEntity ToEntity(PreservationImportJob preservationImportJob, string id) =>
         new()
         {
             Id = id,
@@ -146,8 +150,8 @@ public class ModelConverter(UriGenerator uriGenerator)
     public Binary ToPresentationBinary(BinaryFile binaryFile) =>
         new()
         {
-            Id = uriGenerator.GetRepositoryPath(binaryFile.Path), // is this right? Should differ from below?
-            Content = uriGenerator.GetRepositoryPath(binaryFile.Path),
+            Id = uriGenerator.GetRepositoryPath($"{binaryFile.Parent}/{binaryFile.Path}"),
+            Content = new Uri("https://todo"),
             Name = binaryFile.Name,
             Digest = binaryFile.Digest,
             PartOf = uriGenerator.GetRepositoryPath(binaryFile.Parent)
@@ -156,7 +160,7 @@ public class ModelConverter(UriGenerator uriGenerator)
     public Container ToPresentationContainer(ContainerDirectory containerDirectory) =>
         new()
         {
-            Id = uriGenerator.GetRepositoryPath(containerDirectory.Path),
+            Id = uriGenerator.GetRepositoryPath($"{containerDirectory.Parent}/{containerDirectory.Path}"),
             Name = containerDirectory.Name,
             PartOf = uriGenerator.GetRepositoryPath(containerDirectory.Parent),
         };

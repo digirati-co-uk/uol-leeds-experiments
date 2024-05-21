@@ -48,8 +48,8 @@ public class ImportJobsController(
         var importJob = await importService.GetImportJob(existingArchivalGroup, existingDeposit.S3Root,
             existingDeposit.PreservationPath, start);
         
-        // TODO - convert to a PreservationImportJob
-        return Ok(importJob);
+        var preservationImportJob = modelConverter.ToPreservationResource(importJob, id);
+        return Ok(preservationImportJob);
     }
 
     /// <summary>

@@ -13,7 +13,6 @@ public class UriGenerator
         this.httpContextAccessor = httpContextAccessor;
         preservationSettings = options.Value;
     }
-    
 
     [return: NotNullIfNotNull(nameof(storageUri))]
     public Uri? GetRepositoryPath(Uri? storageUri, string? version = null)
@@ -73,6 +72,6 @@ public class UriGenerator
     private static string GetPreservationPath(Uri storageUri)
     {
         var relativePath = ArchivalGroupUriHelpers.GetArchivalGroupPath(storageUri);
-        return $"repository/{relativePath}";
+        return relativePath.StartsWith("repository") ? relativePath : $"repository/{relativePath}";
     }
 }
