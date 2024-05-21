@@ -72,10 +72,7 @@ public class UriGenerator
 
     private static string GetPreservationPath(Uri storageUri)
     {
-        var storageUriAbsolutePath = storageUri.IsAbsoluteUri ? storageUri.AbsolutePath : storageUri.OriginalString;
-        const string storageApiPrefix = "/api";
-        return Uri.UnescapeDataString(storageUriAbsolutePath[..4] == storageApiPrefix
-            ? storageUriAbsolutePath[4..]
-            : storageUriAbsolutePath);
+        var relativePath = ArchivalGroupUriHelpers.GetArchivalGroupPath(storageUri);
+        return $"repository/{relativePath}";
     }
 }

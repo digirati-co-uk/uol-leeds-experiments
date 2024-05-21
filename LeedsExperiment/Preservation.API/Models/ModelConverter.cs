@@ -136,7 +136,6 @@ public class ModelConverter(UriGenerator uriGenerator)
             Content = new Uri("https://todo"),
             Name = fedoraBinary.FileName,
             Digest = fedoraBinary.Digest,
-            Location = new Uri("s3://todo/path"),
             PartOf = uriGenerator.GetRepositoryPath(fedoraBinary.PartOf),
         };
 
