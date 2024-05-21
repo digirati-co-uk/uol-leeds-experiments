@@ -118,13 +118,13 @@ public class Container : PreservationResource
     /// A list of the immediate child containers, if any.
     /// </summary>
     [JsonPropertyOrder(10)]
-    public Container[] Containers { get; set; }
+    public Container[]? Containers { get; set; }
     
     /// <summary>
     /// A list of the immediate contained binaries, if any.
     /// </summary>
     [JsonPropertyOrder(11)]
-    public Binary[] Binaries { get; set; }
+    public Binary[]? Binaries { get; set; }
     
     /// <summary>
     /// The @id of the DigitalObject the Container is in. Not present if the Container is outside a DigitalObject.

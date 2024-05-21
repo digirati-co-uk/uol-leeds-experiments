@@ -32,8 +32,10 @@ public class ModelConverter(UriGenerator uriGenerator)
                     Version = ToDigitalObjectVersion(ag.Version, requestPath),
                     Versions = (ag.Versions ?? Array.Empty<ObjectVersion>())
                         .Select(v => ToDigitalObjectVersion(v, requestPath)!).ToArray(),
-                    Binaries = ag.Binaries.Select(b => ToPresentationBinary(b)).ToArray(),
-                    Containers = ag.Containers.Select(c => ToPresentationContainer(c)).ToArray(),
+                    Binaries = ag.Binaries.Count == 0 ? null : ag.Binaries.Select(ToPresentationBinary).ToArray(),
+                    Containers = ag.Containers.Count == 0
+                        ? null
+                        : ag.Containers.Select(ToPresentationContainer).ToArray(),
                 };
                 MapBasicsFromStorageResource(digitalObject, storageResource);
                 return digitalObject;
@@ -166,8 +168,12 @@ public class ModelConverter(UriGenerator uriGenerator)
         {
             Id = uriGenerator.GetRepositoryPath(fedoraContainer.StorageApiUri),
             Name = fedoraContainer.Name,
-            Containers = fedoraContainer.Containers.Select(c => ToPresentationContainer(c)).ToArray(),
-            Binaries = fedoraContainer.Binaries.Select(b => ToPresentationBinary(b)).ToArray(),
+            Containers = fedoraContainer.Containers.Count == 0
+                ? null
+                : fedoraContainer.Containers.Select(ToPresentationContainer).ToArray(),
+            Binaries = fedoraContainer.Binaries.Count == 0
+                ? null
+                : fedoraContainer.Binaries.Select(ToPresentationBinary).ToArray(),
             PartOf = uriGenerator.GetRepositoryPath(fedoraContainer.PartOf),
         };
         

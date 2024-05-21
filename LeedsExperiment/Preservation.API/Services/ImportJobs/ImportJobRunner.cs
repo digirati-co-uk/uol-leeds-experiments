@@ -25,6 +25,7 @@ public class ImportJobRunner(
         
         // Write DateBegun + save back to DB
         importJobEntity.DateBegun = DateTime.UtcNow;
+        importJobEntity.Status = ImportJobStates.Running;
         await dbContext.SaveChangesAsync(stoppingToken);
 
         try
@@ -50,6 +51,7 @@ public class ImportJobRunner(
             importJobEntity.ContainersAdded = GetContainerJson(executedImportJob.ContainersAdded);
             importJobEntity.ContainersDeleted = GetContainerJson(executedImportJob.ContainersDeleted);
             importJobEntity.NewVersion = executedImportJob.NewVersion?.OcflVersion;
+            importJobEntity.Status = ImportJobStates.Completed;
         }
         catch (Exception ex)
         {
@@ -62,6 +64,7 @@ public class ImportJobRunner(
             };
 
             importJobEntity.Errors = JsonSerializer.Serialize(error);
+            importJobEntity.Status = ImportJobStates.CompletedWithErrors;
         }
 
         importJobEntity.DateFinished = DateTime.UtcNow;
