@@ -113,7 +113,7 @@ public class ImportJobsController(
 
     private async Task<ArchivalGroup?> GetExistingArchivalGroup(DepositEntity existingDeposit)
     {
-        var path = existingDeposit.PreservationPath.AbsolutePath;
+        var path = ArchivalGroupUriHelpers.GetArchivalGroupPath(existingDeposit.PreservationPath);
         var storageResource = await preservation.GetArchivalGroup(path, null);
         return storageResource;
     }
