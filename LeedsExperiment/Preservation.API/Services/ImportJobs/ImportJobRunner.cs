@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Fedora.Abstractions.Transfer;
 using Preservation.API.Data;
+using Preservation.API.Data.Entities;
 using Preservation.API.Models;
 
 namespace Preservation.API.Services.ImportJobs;
@@ -11,8 +12,6 @@ public class ImportJobRunner(
     IPreservation storageService,
     ILogger<ImportJobRunner> logger)
 {
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
-    
     public async Task Execute(string importJobId, CancellationToken stoppingToken)
     {
         logger.LogInformation("This would execute {ImportJobId}", importJobId);
@@ -23,16 +22,19 @@ public class ImportJobRunner(
             logger.LogInformation("Import job {ImportJobId} not found", importJobId);
             return;
         }
-
-        // Write DateBugun + save back to DB
+        
+        // Write DateBegun + save back to DB
         importJobEntity.DateBegun = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(stoppingToken);
 
         try
         {
             // Call Storage-API, which might take a while so need a longer timeout
+            var isUpdate = IsUpdate(importJobEntity);
             var importJob = modelConverter.GetImportJob(importJobEntity);
             MakeParentsRelative(importJob);
+
+            importJob.IsUpdate = await isUpdate;
             
             // TODO - should this be set in the StorageAPI?
             importJob.ArchivalGroupName = importJob.ArchivalGroupUri!.Slug();
@@ -47,6 +49,7 @@ public class ImportJobRunner(
             importJobEntity.BinariesPatched = GetBinaryJson(executedImportJob.FilesPatched);
             importJobEntity.ContainersAdded = GetContainerJson(executedImportJob.ContainersAdded);
             importJobEntity.ContainersDeleted = GetContainerJson(executedImportJob.ContainersDeleted);
+            importJobEntity.NewVersion = executedImportJob.NewVersion?.OcflVersion;
         }
         catch (Exception ex)
         {
@@ -63,6 +66,21 @@ public class ImportJobRunner(
 
         importJobEntity.DateFinished = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(stoppingToken);
+    }
+
+    private async Task<bool> IsUpdate(ImportJobEntity importJob)
+    {
+        try
+        {
+            var path = ArchivalGroupUriHelpers.GetArchivalGroupPath(importJob.DigitalObject);
+            var resource = await storageService.GetArchivalGroup(path, null);
+            return resource != null;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error checking if archival group for {ImportJobId} exists", importJob.Id);
+            throw;
+        }
     }
 
     private void MakeParentsRelative(ImportJob importJob)
