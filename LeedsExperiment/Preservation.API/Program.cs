@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.S3;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using Preservation;
 using Preservation.API;
@@ -64,11 +65,17 @@ builder.Services.AddSwaggerGen(opts =>
     opts.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+{
+    opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+});
+
 var app = builder.Build();
 
 app.MapGet("/ping", () => "pong");
 
 app.TryRunMigrations(app.Configuration, app.Logger);
+app.UseForwardedHeaders();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
