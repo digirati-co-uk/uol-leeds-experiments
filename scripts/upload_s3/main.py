@@ -13,7 +13,8 @@ s3 = session.client('s3')
 @click.option("--folder", default="c:\\temp\\uol\\payloads\\")
 @click.option("--deposit", required=True)
 def handle_request(folder: str, deposit: str):
-    root_key = f"deposits/dev/{deposit}/"
+    # root_key = f"deposits/dev/{deposit}/"
+    root_key = f"preservation_deposits/{deposit}/"
     upload_folder(folder, root_key)
 
 

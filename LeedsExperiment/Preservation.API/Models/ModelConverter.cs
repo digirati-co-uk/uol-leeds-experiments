@@ -128,15 +128,6 @@ public class ModelConverter(UriGenerator uriGenerator)
                 uriGenerator.GetRepositoryPath(importJob.ArchivalGroupUri)!),
         };
 
-    /*public ImportJobEntity ToEntity(PreservationImportJob preservationImportJob, string id) =>
-        new()
-        {
-            Id = id,
-            DigitalObject = preservationImportJob.DigitalObject,
-            ImportJobJson = JsonSerializer.Serialize(preservationImportJob),
-            OriginalImportJobId = preservationImportJob.Id!,
-        };*/
-
     private DigitalObjectVersion? ToDigitalObjectVersion(ObjectVersion? objectVersion, Uri repositoryUri)
     {
         if (objectVersion == null) return null;

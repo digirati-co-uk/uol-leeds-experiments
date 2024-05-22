@@ -62,6 +62,7 @@ public class UriGenerator
             var baseAddress = preservationSettings.PreservationApiBaseAddress;
             var uriBuilderFromConfig = new UriBuilder(baseAddress.Scheme, baseAddress.Host)
             {
+                Path = path,
                 Port = baseAddress.Port,
             };
 
