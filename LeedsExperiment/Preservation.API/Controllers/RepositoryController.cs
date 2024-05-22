@@ -6,10 +6,7 @@ namespace Preservation.API.Controllers;
 
 [Route("[controller]/{*path}")]
 [ApiController]
-public class RepositoryController(
-    IPreservation preservation,
-    ModelConverter modelConverter,
-    ILogger<RepositoryController> logger) : Controller
+public class RepositoryController(IPreservation preservation, ModelConverter modelConverter) : Controller
 {
     /// <summary>
     /// Browse underlying repository for Container, DigitalObject or Binary.
@@ -31,7 +28,7 @@ public class RepositoryController(
         if (storageResource == null) return NotFound();
 
         var preservationResource =
-            modelConverter.ToPreservationResource(storageResource, GetCorrectDisplayUrl());
+            modelConverter.ToPreservationResource(storageResource, new Uri(HttpContext.Request.GetDisplayUrl()));
         return Ok(preservationResource);
     }
 
@@ -50,24 +47,7 @@ public class RepositoryController(
         var unEscapedPath = Uri.UnescapeDataString(path);
         var storageContainer = await preservation.CreateContainer(unEscapedPath);
         
-        var container = modelConverter.ToPreservationResource(storageContainer, GetCorrectDisplayUrl());
+        var container = modelConverter.ToPreservationResource(storageContainer, new Uri(HttpContext.Request.GetDisplayUrl()));
         return CreatedAtAction("Browse", new { path }, container);
-    }
-    
-    public Uri GetCorrectDisplayUrl()
-    {
-        // HACK avoid `https://uol.digirati:80` when behind ELB 
-        var displayUrl = HttpContext.Request.GetDisplayUrl();
-        logger.LogInformation("DisplayUrl {UrlAsString}", displayUrl);
-        var uri = new Uri(displayUrl);
-        
-        logger.LogInformation("Url Port and Scheme: {Port} and {Scheme}", uri.Scheme, uri.Port);
-        if (uri is { Scheme: "https", Port: -1 or 80 })
-        {
-            var uriBuilder = new UriBuilder(uri) { Port = 443 };
-            return uriBuilder.Uri;
-        }
-
-        return uri;
     }
 }

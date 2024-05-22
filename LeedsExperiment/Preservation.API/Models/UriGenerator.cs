@@ -52,9 +52,9 @@ public class UriGenerator
         {
             var uriBuilderFromContext = new UriBuilder(request.Scheme, request.Host.Host)
             {
-                Port = request.Host.Port ?? 80,
                 Path = path
             };
+            if (request.Host.Port.HasValue) uriBuilderFromContext.Port = request.Host.Port.Value;
             return uriBuilderFromContext;
         }
         else
