@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.Extensions;
+﻿using System.Text;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Preservation.API.Models;
 
@@ -28,7 +29,7 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
         if (storageResource == null) return NotFound();
 
         var preservationResource =
-            modelConverter.ToPreservationResource(storageResource, new Uri(HttpContext.Request.GetDisplayUrl()));
+            modelConverter.ToPreservationResource(storageResource, GetCorrectDisplayUrl());
         return Ok(preservationResource);
     }
 
@@ -47,7 +48,21 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
         var unEscapedPath = Uri.UnescapeDataString(path);
         var storageContainer = await preservation.CreateContainer(unEscapedPath);
         
-        var container = modelConverter.ToPreservationResource(storageContainer, new Uri(HttpContext.Request.GetDisplayUrl()));
+        var container = modelConverter.ToPreservationResource(storageContainer, GetCorrectDisplayUrl());
         return CreatedAtAction("Browse", new { path }, container);
+    }
+    
+    public Uri GetCorrectDisplayUrl()
+    {
+        // HACK avoid `https://uol.digirati:80` when behind ELB 
+        var displayUrl = HttpContext.Request.GetDisplayUrl();
+        var uri = new Uri(displayUrl);
+        if (uri is { Scheme: "https", Port: -1 or 80 })
+        {
+            var uriBuilder = new UriBuilder(uri) { Port = 443 };
+            return uriBuilder.Uri;
+        }
+
+        return uri;
     }
 }
