@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Http.Extensions;
+﻿using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Preservation.API.Models;
 
@@ -7,7 +6,10 @@ namespace Preservation.API.Controllers;
 
 [Route("[controller]/{*path}")]
 [ApiController]
-public class RepositoryController(IPreservation preservation, ModelConverter modelConverter) : Controller
+public class RepositoryController(
+    IPreservation preservation,
+    ModelConverter modelConverter,
+    ILogger<RepositoryController> logger) : Controller
 {
     /// <summary>
     /// Browse underlying repository for Container, DigitalObject or Binary.
@@ -56,7 +58,10 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     {
         // HACK avoid `https://uol.digirati:80` when behind ELB 
         var displayUrl = HttpContext.Request.GetDisplayUrl();
+        logger.LogInformation("DisplayUrl {UrlAsString}", displayUrl);
         var uri = new Uri(displayUrl);
+        
+        logger.LogInformation("Url Port and Scheme: {Port} and {Scheme}", uri.Scheme, uri.Port);
         if (uri is { Scheme: "https", Port: -1 or 80 })
         {
             var uriBuilder = new UriBuilder(uri) { Port = 443 };
