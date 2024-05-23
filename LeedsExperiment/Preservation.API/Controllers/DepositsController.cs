@@ -26,9 +26,9 @@ public class DepositsController(
 
     /// <summary>
     /// Create a new Deposit object. This will create a working location in s3 that will contain working set of files
-    /// that will become a <see cref="DigitalObject"/>. 
+    /// that will become a preserved DigitalObject.
     /// </summary>
-    /// <param name="deposit">(Optional) Partial deposit object containing Preservation URI or submission text</param>
+    /// <param name="deposit">(Optional) Partial deposit object containing Preservation URI and/or submission text</param>
     /// <returns>Newly created <see cref="Deposit"/> object</returns>
     /// <remarks>
     /// Sample request:
@@ -66,9 +66,9 @@ public class DepositsController(
     /// <remarks>
     /// Sample request:
     ///
-    ///     PATCH /deposits/xmpwer321
+    ///     PATCH /deposits/abcdef321
     ///     {
-    ///       "digitalObject": "https://preservation.dlip.leeds.ac.uk/repository/example-objects/DigitalObject2",
+    ///       "digitalObject": "https://pres.uol.digirati.io/repository/example-objects/DigitalObject2",
     ///       "submissionText": "Just leaving this here",
     ///       "status": "processing"
     ///     }
@@ -103,7 +103,7 @@ public class DepositsController(
     }
 
     /// <summary>
-    /// Get existing deposit with specified Id
+    /// Get details of Deposit with specified Id
     /// </summary>
     /// <param name="id">Id of Deposit to fetch</param>
     /// <returns><see cref="Deposit"/> object</returns>
@@ -118,9 +118,9 @@ public class DepositsController(
 
     /// <summary>
     /// Create a new deposit based on an existing object in Fedora repository. This will create a new Deposit, a working
-    /// space in S3 and export all content from object specified in "digitalObject". The Deposit will return immediately
-    /// but cannot be worked on until status is "ready". You may see object gradually populate into S3 key.
-    /// "version" can optionally be specified, if omitted the latest version is exported.
+    /// space in S3 and export all content from object specified in by "DigitalObject" property. The Deposit will return
+    /// immediately, while export continues in the background, but cannot be worked on until status is "ready". You may
+    /// see objects gradually populate into S3 key.
     /// </summary>
     /// <param name="deposit">Details of DigitalObject to create a deposit from</param>
     /// <returns>Newly created <see cref="Deposit"/> object</returns>
@@ -129,12 +129,12 @@ public class DepositsController(
     ///
     ///     POST /deposits/export
     ///     {
-    ///       "digitalObject": "https://preservation.dlip.leeds.ac.uk/repository/example-objects/DigitalObject2"
+    ///       "digitalObject": "https://pres.uol.digirati.io/repository/example-objects/DigitalObject2"
     ///     }
     ///
-    ///     POST /deposits/export
+    ///     POST /deposits/export (FUTURE VERSION - currently not supported)
     ///     {
-    ///       "digitalObject": "https://preservation.dlip.leeds.ac.uk/repository/example-objects/DigitalObject2",
+    ///       "digitalObject": "https://pres.uol.digirati.io/repository/example-objects/DigitalObject2",
     ///       "version": "v4"
     ///     }
     /// </remarks>

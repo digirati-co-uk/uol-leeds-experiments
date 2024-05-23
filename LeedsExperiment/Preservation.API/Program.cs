@@ -72,7 +72,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 
 var app = builder.Build();
 
-app.MapGet("/ping", () => "pong");
+app.MapGet("/ping", () => "pong").ExcludeFromDescription();
 
 app.TryRunMigrations(app.Configuration, app.Logger);
 app.UseForwardedHeaders();

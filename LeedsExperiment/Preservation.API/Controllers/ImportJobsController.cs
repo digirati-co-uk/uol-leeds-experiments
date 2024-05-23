@@ -19,16 +19,18 @@ public class ImportJobsController(
     ModelConverter modelConverter) : Controller
 {
     /// <summary>
-    /// Generate an <see cref="ImportJob"/> - a statement, in JSON form, of what changes you want carried out.
+    /// Generate an ImportJob - a statement, in JSON form, of what changes you want carried out.
     /// Containers to add, Containers to delete, Binaries to add, Binaries to delete, Binaries to update.
     /// This will build an ImportJob for you, by comparing the DigitalObject (if it exists) with the content of the
-    /// Deposit in S3 (S3 only - production implementation will use any known METS files for further metadata and
-    /// structure).
+    /// Deposit in S3 (**S3 only - production implementation will use any known METS files for further metadata and
+    /// structure**).
     /// No changes will be made at this point. The ImportJob can be manually edited prior to submission if required.
     /// </summary>
-    /// <param name="id">The identifier of a deposit to generate <see cref="ImportJob"/> for</param>
+    /// <param name="id">The identifier of a deposit to generate ImportJob for</param>
     /// <returns>JSON object representing changeset</returns>
     [HttpGet("diff")]
+    [Produces("application/json")]
+    [Produces<PreservationImportJob>]
     public async Task<IActionResult> GenerateImportJob([FromRoute] string id, CancellationToken cancellationToken)
     {
         var start = DateTime.UtcNow;
@@ -53,13 +55,17 @@ public class ImportJobsController(
     }
 
     /// <summary>
-    /// Execute the instructions in the <see cref="ImportJob"/> to create/update/delete relevant resources from
-    /// underlying storage
+    /// Execute the instructions in the provided ImportJob JSON to create/update/delete relevant resources in
+    /// underlying preservation storage.
+    /// This will quickly return an empty ImportJobResult in the "waiting" state. The "id" property and returned
+    /// Location header will link to a location where the status of import can be checked  
     /// </summary>
     /// <param name="id">The deposit Id this is related to</param>
     /// <param name="importJob">JSON instructions to be carried out</param>
-    /// <returns>TODO - return val</returns>
+    /// <returns>Newly created ImportJobResult</returns>
     [HttpPost]
+    [Produces("application/json")]
+    [ProducesResponseType<ImportJobResult>(201, "application/json")]
     public async Task<IActionResult> ExecuteImportJob([FromRoute] string id, [FromBody] PreservationImportJob importJob,
         CancellationToken cancellationToken)
     {
@@ -92,6 +98,12 @@ public class ImportJobsController(
         return CreatedAtAction(nameof(GetImportJobResult), new { id, importJobId = entity.Id }, importJobResult);
     }
 
+    /// <summary>
+    /// Get the status of an existing ImportJobResult - the result of executing an ImportJob
+    /// </summary>
+    /// <param name="id">Deposit id import job is for</param>
+    /// <param name="importJobId">Unique import job identifier</param>
+    /// <returns>Status of ImportJobResult</returns>
     [HttpGet("results/{importJobId}")]
     public async Task<IActionResult> GetImportJobResult([FromRoute] string id, [FromRoute] string importJobId,
         CancellationToken cancellationToken)

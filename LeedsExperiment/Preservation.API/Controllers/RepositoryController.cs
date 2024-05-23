@@ -13,11 +13,14 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     /// </summary>
     /// <param name="path">Path to item in repository to fetch (e.g. path/to/item</param>
     /// <param name="version">
-    /// Optional version parameter, in format "v1","v2" etc. Current version returned if omitted
+    /// Optional version parameter, in format "v1","v2" etc. Current version returned if omitted. NOTE: not fully
+    /// implemented in demo, will always return latest version.
     /// </param>
-    /// <returns><see cref="Container"/>, <see cref="DigitalObject"/> or <see cref="Binary"/></returns>
+    /// <returns>Container, DigitalObject or Binary</returns>
     [HttpGet(Name = "Browse")]
-    [Produces("application/json")]
+    [ProducesResponseType<Container>(200, "application/json")]
+    [ProducesResponseType<Binary>(200, "application/json")]
+    [ProducesResponseType<DigitalObject>(200, "application/json")]
     public async Task<IActionResult> Browse([FromRoute] string path, [FromQuery] string? version = null)
     {
         var unEscapedPath = Uri.UnescapeDataString(path);

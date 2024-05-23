@@ -51,7 +51,7 @@ builder.Services.AddHttpClient<IFedora, FedoraWrapper>(client =>
 
 var app = builder.Build();
 
-app.MapGet("/api/ping", () => "pong");
+app.MapGet("/api/ping", () => "pong").ExcludeFromDescription();
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
