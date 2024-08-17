@@ -1,4 +1,5 @@
 ﻿using Amazon.S3;
+using Amazon.S3.Model;
 using Fedora;
 using Fedora.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -72,12 +73,25 @@ public class ExportController(
             {
                 var sourceKey = SafeJoin(storageMap.ObjectPath, file.Value.FullPath);
                 var destKey = SafeJoin(exportKey, file.Key);
-                var resp = await awsS3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket,
-                    destKey);
-                // Get AWS to calculate the sha-256 once copied
-                // ...and store it in the metadata
-                // ...and compare it with file.Value.Hash
-                result.Files.Add($"s3://{SafeJoin(options.StagingBucket, destKey)}");
+                var req = new CopyObjectRequest
+                {
+                    SourceBucket = storageMap.Root,
+                    SourceKey = sourceKey,
+                    DestinationBucket = options.StagingBucket,
+                    DestinationKey = destKey,
+                    ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+                };
+                var resp = await awsS3Client.CopyObjectAsync(req);
+                if(resp != null 
+                    && resp.ChecksumSHA256 != null 
+                    && AwsChecksum.FromBase64ToHex(resp.ChecksumSHA256) == file.Value.Hash)
+                {
+                    result.Files.Add($"s3://{SafeJoin(options.StagingBucket, destKey)}");
+                }
+                else
+                {
+                    throw new InvalidOperationException("Checksum of moved file does not match expected value");
+                }
             }
 
             result.End = DateTime.Now;
