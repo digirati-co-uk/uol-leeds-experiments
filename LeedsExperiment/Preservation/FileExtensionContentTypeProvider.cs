@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Preservation;
+namespace Storage;
 
 /// <summary>
 /// Provides a mapping between file extensions and MIME types.

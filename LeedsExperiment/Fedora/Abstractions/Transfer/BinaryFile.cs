@@ -9,7 +9,7 @@ namespace Fedora.Abstractions.Transfer;
 public class BinaryFile : ResourceWithParentUri
 {
     /// <summary>
-    /// An S3 key, a filesystem path - somewhere accessible to the Preservation API, to import from or export to
+    /// An S3 key, a filesystem path - somewhere accessible to the Storage API, to import from or export to
     /// </summary>    
     [JsonPropertyName("externalLocation")]
     [JsonPropertyOrder(11)]

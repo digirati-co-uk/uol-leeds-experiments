@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Preservation.API.Data;
+using Storage.API.Data;
 
 #nullable disable
 
-namespace Preservation.API.Data.Migrations
+namespace Storage.API.Data.Migrations
 {
     [DbContext(typeof(PreservationContext))]
     [Migration("20240514150611_add importjobs")]

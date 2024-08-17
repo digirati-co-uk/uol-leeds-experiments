@@ -1,8 +1,8 @@
 ﻿using System.Threading.Channels;
-using Preservation.API.Controllers;
-using Preservation.API.Data.Entities;
+using Storage.API.Controllers;
+using Storage.API.Data.Entities;
 
-namespace Preservation.API.Services.Exporter;
+namespace Storage.API.Services.Exporter;
 
 public interface IExportQueue
 {

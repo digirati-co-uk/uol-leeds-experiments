@@ -1,15 +1,15 @@
 ﻿using System.Text.Json;
 using Fedora.Abstractions.Transfer;
-using Preservation.API.Data;
-using Preservation.API.Data.Entities;
-using Preservation.API.Models;
+using Storage.API.Data;
+using Storage.API.Data.Entities;
+using Storage.API.Models;
 
-namespace Preservation.API.Services.ImportJobs;
+namespace Storage.API.Services.ImportJobs;
 
 public class ImportJobRunner(
     PreservationContext dbContext,
     ModelConverter modelConverter,
-    IPreservation storageService,
+    IStorage storageService,
     ILogger<ImportJobRunner> logger)
 {
     public async Task Execute(string importJobId, CancellationToken stoppingToken)

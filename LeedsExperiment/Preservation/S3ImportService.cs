@@ -5,7 +5,7 @@ using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
 
-namespace Preservation;
+namespace Storage;
 
 public interface IImportService
 {

@@ -1,18 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Preservation;
+using Storage;
 
 namespace Dashboard.Controllers
 {
     public class OcflController : Controller
     {
         private readonly ILogger<OcflController> logger;
-        private readonly IPreservation preservation;
+        private readonly IStorage storage;
 
         public OcflController(
-            IPreservation preservation,
+            IStorage storage,
             ILogger<OcflController> logger)
         {
-            this.preservation = preservation;
+            this.storage = storage;
             this.logger = logger;
         }
 
@@ -23,7 +23,7 @@ namespace Dashboard.Controllers
             [FromQuery] string? version = null)
         {
             ViewBag.Path = path;
-            var ag = await preservation.GetArchivalGroup(path, version);
+            var ag = await storage.GetArchivalGroup(path, version);
             if (ag == null)
             {
                 return NotFound();

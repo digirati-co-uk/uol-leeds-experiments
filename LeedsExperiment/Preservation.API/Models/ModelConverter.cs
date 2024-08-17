@@ -2,9 +2,9 @@
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
-using Preservation.API.Data.Entities;
+using Storage.API.Data.Entities;
 
-namespace Preservation.API.Models;
+namespace Storage.API.Models;
 
 /// <summary>
 /// Easy r-to-l converters for various models

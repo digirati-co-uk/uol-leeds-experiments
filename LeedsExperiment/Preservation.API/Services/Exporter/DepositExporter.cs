@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
-using Preservation.API.Data;
-using Preservation.API.Data.Entities;
+using Storage.API.Data;
+using Storage.API.Data.Entities;
 
-namespace Preservation.API.Services.Exporter;
+namespace Storage.API.Services.Exporter;
 
-public class DepositExporter(IPreservation preservation, PreservationContext dbContext, ILogger<DepositExporter> logger)
+public class DepositExporter(IStorage storage, PreservationContext dbContext, ILogger<DepositExporter> logger)
 {
     public async Task Export(ExportRequest exportRequest, CancellationToken cancellationToken)
     {
@@ -16,7 +16,7 @@ public class DepositExporter(IPreservation preservation, PreservationContext dbC
             var exportKey = deposit.S3Root.AbsolutePath;
             var digitalObject = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(deposit.PreservationPath)!.OriginalString;
             var stopWatch = Stopwatch.StartNew();
-            var exportResult = await preservation.Export(digitalObject, exportRequest.Version, exportKey);
+            var exportResult = await storage.Export(digitalObject, exportRequest.Version, exportKey);
             stopWatch.Stop();
 
             logger.LogInformation("Export of deposit {Deposit} to {ExportKey} completed in {Elapsed}ms", deposit.Id,

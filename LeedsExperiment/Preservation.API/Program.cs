@@ -4,14 +4,14 @@ using System.Text.Json.Serialization;
 using Amazon.S3;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
-using Preservation;
-using Preservation.API;
-using Preservation.API.Data;
-using Preservation.API.Models;
-using Preservation.API.Services;
-using Preservation.API.Services.Exporter;
-using Preservation.API.Services.ImportJobs;
-using PreservationApiClient;
+using Storage;
+using Storage.API;
+using Storage.API.Data;
+using Storage.API.Models;
+using Storage.API.Services;
+using Storage.API.Services.Exporter;
+using Storage.API.Services.ImportJobs;
+using StorageApiClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +26,7 @@ builder.Services
 builder.Services.Configure<PreservationSettings>(builder.Configuration);
 var preservationConfig = builder.Configuration.Get<PreservationSettings>()!;
 
-builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
+builder.Services.AddHttpClient<IStorage, StorageService>(client =>
 {
     client.BaseAddress = preservationConfig.StorageApiBaseAddress;
     client.DefaultRequestHeaders.Add("Accept", "application/json");

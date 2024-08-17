@@ -1,4 +1,4 @@
-﻿namespace Preservation.API.Data.Entities;
+﻿namespace Storage.API.Data.Entities;
 
 public class ImportJobEntity
 {

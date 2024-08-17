@@ -1,12 +1,12 @@
 ﻿using System.Net;
 using Fedora.Abstractions;
-using Preservation;
+using Storage;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace PreservationApiClient;
+namespace StorageApiClient;
 
-public class StorageService : IPreservation
+public class StorageService : IStorage
 {
     private readonly HttpClient httpClient;
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);

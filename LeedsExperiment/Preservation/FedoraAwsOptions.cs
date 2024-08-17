@@ -1,5 +1,5 @@
 ﻿
-namespace Preservation;
+namespace Storage;
 
 public class FedoraAwsOptions
 {

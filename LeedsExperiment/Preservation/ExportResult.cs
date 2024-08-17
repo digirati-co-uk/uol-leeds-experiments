@@ -1,7 +1,7 @@
 ﻿using Fedora.Storage;
 using System.Text.Json.Serialization;
 
-namespace Preservation;
+namespace Storage;
 
 public class ExportResult
 {

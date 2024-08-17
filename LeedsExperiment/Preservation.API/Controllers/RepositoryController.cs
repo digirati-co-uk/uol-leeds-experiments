@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Preservation.API.Models;
+using Storage.API.Models;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("[controller]/{*path}")]
 [ApiController]
-public class RepositoryController(IPreservation preservation, ModelConverter modelConverter) : Controller
+public class RepositoryController(IStorage storage, ModelConverter modelConverter) : Controller
 {
     /// <summary>
     /// Browse underlying repository for Container, DigitalObject or Binary.
@@ -25,8 +25,8 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     {
         var unEscapedPath = Uri.UnescapeDataString(path);
         var storageResource = string.IsNullOrEmpty(version)
-            ? await preservation.GetResource(unEscapedPath)
-            : await preservation.GetArchivalGroup(unEscapedPath, version);
+            ? await storage.GetResource(unEscapedPath)
+            : await storage.GetArchivalGroup(unEscapedPath, version);
 
         if (storageResource == null) return NotFound();
 
@@ -48,7 +48,7 @@ public class RepositoryController(IPreservation preservation, ModelConverter mod
     public async Task<IActionResult> CreateContainer([FromRoute] string path)
     {
         var unEscapedPath = Uri.UnescapeDataString(path);
-        var storageContainer = await preservation.CreateContainer(unEscapedPath);
+        var storageContainer = await storage.CreateContainer(unEscapedPath);
         
         var container = modelConverter.ToPreservationResource(storageContainer, new Uri(HttpContext.Request.GetDisplayUrl()));
         return CreatedAtAction("Browse", new { path }, container);

@@ -1,7 +1,7 @@
 ﻿using Dashboard.Models;
 using Fedora.Abstractions;
 using Microsoft.AspNetCore.Mvc;
-using Preservation;
+using Storage;
 using System.Text.Json;
 
 namespace Dashboard.Controllers
@@ -9,13 +9,13 @@ namespace Dashboard.Controllers
     public class ImportExportController : Controller
     {
         private readonly ILogger<ImportExportController> logger;
-        private readonly IPreservation preservation;
+        private readonly IStorage storage;
 
         public ImportExportController(
-            IPreservation preservation,
+            IStorage storage,
             ILogger<ImportExportController> logger)
         {
-            this.preservation = preservation;
+            this.storage = storage;
             this.logger = logger;
         }
 
@@ -27,7 +27,7 @@ namespace Dashboard.Controllers
             [FromQuery] string? version = null)
         {
             ViewBag.Path = path;
-            var ag = await preservation.GetArchivalGroup(path, version);
+            var ag = await storage.GetArchivalGroup(path, version);
             if (ag == null)
             {
                 return NotFound();
@@ -56,7 +56,7 @@ namespace Dashboard.Controllers
             [FromRoute] string path,
             [FromQuery] string? version = null)
         {
-            var exportResult = await preservation.Export(path, version);
+            var exportResult = await storage.Export(path, version);
             return View("ExportResult", exportResult);
             // we could also supply the ag to the model for a richer display but at the expense of longer time
         }
@@ -70,12 +70,12 @@ namespace Dashboard.Controllers
             [FromQuery] string? source = null,
             [FromQuery] string? name = null) // name if creating a new one; can't rename atm
         {            
-            var resourceInfo = await preservation.GetResourceInfo(path);
+            var resourceInfo = await storage.GetResourceInfo(path);
             var model = new ImportModel { Path = path, ResourceInfo = resourceInfo };
             if(resourceInfo.Type == nameof(ArchivalGroup))
             {
                 // This is an update to an existing archival group
-                var existingAg = await preservation.GetArchivalGroup(path, null);
+                var existingAg = await storage.GetArchivalGroup(path, null);
                 model.ArchivalGroup = existingAg;
             } 
             else if (resourceInfo.StatusCode != 404)
@@ -89,7 +89,7 @@ namespace Dashboard.Controllers
                 // we already know where the update file are
                 // This is only for synchronising with S3; There'll need to be a different route
                 // for ad hoc construction of an ImportJob (e.g., it's just one deletion).
-                var importJob = await preservation.GetUpdateJob(path, source);
+                var importJob = await storage.GetUpdateJob(path, source);
                 model.ImportJob = importJob;
                 importJob.ArchivalGroupName = model.ArchivalGroup?.Name ?? model.Name;
                 return View("ImportJob", model);
@@ -127,8 +127,8 @@ namespace Dashboard.Controllers
             // But I can make this import job outside the dashboard any way I like.
             // Would probably post directly to the Preservation API
 
-            var processedJob = await preservation.Import(importJob);
-            var resultingAg = await preservation.GetArchivalGroup(importJob.ArchivalGroupPath, null);
+            var processedJob = await storage.Import(importJob);
+            var resultingAg = await storage.GetArchivalGroup(importJob.ArchivalGroupPath, null);
             var model = new ImportModel
             {
                 ImportJob = processedJob,

@@ -15,7 +15,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-namespace Preservation;
+namespace Storage;
 
 public class FedoraWrapper : IFedora
 {

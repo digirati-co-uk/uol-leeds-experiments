@@ -1,7 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 
-namespace Preservation;
+namespace Storage;
 
 public class AwsChecksum
 {

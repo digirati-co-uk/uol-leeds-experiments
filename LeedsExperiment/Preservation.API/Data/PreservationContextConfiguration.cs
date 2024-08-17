@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Preservation.API.Data;
+namespace Storage.API.Data;
 
 /// <summary>
 /// Helpers for configuring db context

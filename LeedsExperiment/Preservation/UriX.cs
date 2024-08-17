@@ -1,5 +1,5 @@
 ﻿
-namespace Preservation
+namespace Storage
 {
     // Probably want this somewhere else, and also use this stuff throughout codebase
     public static class UriX

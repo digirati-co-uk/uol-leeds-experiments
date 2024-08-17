@@ -1,18 +1,18 @@
 ﻿using Fedora.Abstractions;
 using Microsoft.AspNetCore.Mvc;
-using Preservation.API.Data;
-using Preservation.API.Data.Entities;
-using Preservation.API.Models;
-using Preservation.API.Services;
-using Preservation.API.Services.ImportJobs;
+using Storage.API.Data;
+using Storage.API.Data.Entities;
+using Storage.API.Models;
+using Storage.API.Services;
+using Storage.API.Services.ImportJobs;
 
-namespace Preservation.API.Controllers;
+namespace Storage.API.Controllers;
 
 [Route("deposits/{id}/[controller]")]
 [ApiController]
 public class ImportJobsController(
     PreservationContext dbContext,
-    IPreservation preservation,
+    IStorage storage,
     IImportJobQueue importJobQueue,
     IImportService importService,
     IIdentityService identityService,
@@ -126,7 +126,7 @@ public class ImportJobsController(
     private async Task<ArchivalGroup?> GetExistingArchivalGroup(DepositEntity existingDeposit)
     {
         var path = ArchivalGroupUriHelpers.GetArchivalGroupPath(existingDeposit.PreservationPath);
-        var storageResource = await preservation.GetArchivalGroup(path, null);
+        var storageResource = await storage.GetArchivalGroup(path, null);
         return storageResource;
     }
 }

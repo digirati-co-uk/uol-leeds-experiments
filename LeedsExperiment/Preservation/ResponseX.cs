@@ -1,6 +1,6 @@
 ﻿using Fedora.Vocab;
 
-namespace Preservation;
+namespace Storage;
 
 public static class ResponseX
 {

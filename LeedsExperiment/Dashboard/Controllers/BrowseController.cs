@@ -1,6 +1,6 @@
 ﻿using Fedora.Abstractions;
 using Microsoft.AspNetCore.Mvc;
-using Preservation;
+using Storage;
 using Utils;
 
 namespace Dashboard.Controllers;
@@ -8,13 +8,13 @@ namespace Dashboard.Controllers;
 public class BrowseController : Controller
 {
     private readonly ILogger<BrowseController> logger;
-    private readonly IPreservation preservation;
+    private readonly IStorage storage;
 
     public BrowseController(
-        IPreservation preservation,
+        IStorage storage,
         ILogger<BrowseController> logger)
     {
-        this.preservation = preservation;
+        this.storage = storage;
         this.logger = logger;
     }
 
@@ -23,7 +23,7 @@ public class BrowseController : Controller
     public async Task<IActionResult> IndexAsync(string? path = null)
     {
         ViewBag.Path = path;
-        var resource = await preservation.GetResource(path);
+        var resource = await storage.GetResource(path);
         if (resource == null)
         {
             return NotFound();
@@ -41,7 +41,7 @@ public class BrowseController : Controller
         }
         if (resource.PreservationApiPartOf != null)
         {
-            ViewBag.ArchivalGroupPath = preservation.GetInternalPath(resource.PreservationApiPartOf);
+            ViewBag.ArchivalGroupPath = storage.GetInternalPath(resource.PreservationApiPartOf);
         }
         var reqPath = Request.Path.Value?.TrimEnd('/');
         if (reqPath.HasText())
@@ -74,7 +74,7 @@ public class BrowseController : Controller
         }
         ViewBag.Path = parentPath;
         var path = $"{parentPath.TrimEnd('/')}/{name}";
-        var parentResource = await preservation.GetResource(parentPath);
+        var parentResource = await storage.GetResource(parentPath);
         if(string.IsNullOrWhiteSpace(name))
         {
             ViewBag.Problem = $"No name supplied!";
@@ -91,14 +91,14 @@ public class BrowseController : Controller
             ViewBag.Problem = $"Can't create a container within an Archival Group - use an importJob please!";
             return View("Container", parentResource as Container);
         }
-        var info = await preservation.GetResourceInfo(path);
+        var info = await storage.GetResourceInfo(path);
         if (info.Exists)
         {
             ViewBag.Problem = $"Resource already exists at path {path}";
             return View("Container", parentResource as Container);
         }
 
-        Container newContainer = await preservation.CreateContainer(path);
+        Container newContainer = await storage.CreateContainer(path);
         ViewBag.Parent = "/browse/" + parentPath;
 
 

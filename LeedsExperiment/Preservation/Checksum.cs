@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Preservation;
+namespace Storage;
 
 public class Checksum
 {

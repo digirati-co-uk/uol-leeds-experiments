@@ -9,8 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\PreservationApiClient\PreservationApiClient.csproj" />
-      <ProjectReference Include="..\Preservation\Preservation.csproj" />
+      <ProjectReference Include="..\PreservationApiClient\StorageApiClient.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -2,7 +2,7 @@
 using Fedora.ApiModel;
 using Fedora.Vocab;
 
-namespace Preservation;
+namespace Storage;
 
 public static class RequestX
 {

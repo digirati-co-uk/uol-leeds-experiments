@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Preservation.API.Data.Migrations
+namespace Storage.API.Data.Migrations
 {
     /// <inheritdoc />
     public partial class depositlastModifiedBynullable : Migration

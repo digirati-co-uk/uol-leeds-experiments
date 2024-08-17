@@ -1,7 +1,7 @@
 ﻿using System.Threading.Channels;
-using Preservation.API.Data.Entities;
+using Storage.API.Data.Entities;
 
-namespace Preservation.API.Services.ImportJobs;
+namespace Storage.API.Services.ImportJobs;
 
 public interface IImportJobQueue
 {

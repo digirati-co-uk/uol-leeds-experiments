@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Preservation;
+namespace Storage;
 
 public static class JsonLdX
 {

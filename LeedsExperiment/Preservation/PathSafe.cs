@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Preservation
+namespace Storage
 {
     public class PathSafe
     {

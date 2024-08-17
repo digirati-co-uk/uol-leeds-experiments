@@ -1,6 +1,6 @@
 ﻿using Amazon.S3.Model;
 
-namespace Preservation.API.Models;
+namespace Storage.API.Models;
 
 public static class S3Helpers
 {

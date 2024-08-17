@@ -1,4 +1,4 @@
-﻿namespace Preservation.API;
+﻿namespace Storage.API;
 
 public class PreservationSettings
 {

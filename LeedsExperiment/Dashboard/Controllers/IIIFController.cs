@@ -10,7 +10,7 @@ using IIIF.Serialisation;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Preservation;
+using Storage;
 using Utils;
 
 namespace Dashboard.Controllers
@@ -18,15 +18,15 @@ namespace Dashboard.Controllers
     public class IIIFController : Controller
     {
         private readonly ILogger<IIIFController> logger;
-        private readonly IPreservation preservation;
+        private readonly IStorage storage;
         private readonly IDlcs dlcs;
 
         public IIIFController(
-            IPreservation preservation,
+            IStorage storage,
             IDlcs dlcs,
             ILogger<IIIFController> logger)
         {
-            this.preservation = preservation;
+            this.storage = storage;
             this.logger = logger;
             this.dlcs = dlcs;
         }
@@ -43,7 +43,7 @@ namespace Dashboard.Controllers
         {
             ViewBag.Path = path;
             var model = new IIIFSyncModel { Path = path };
-            var getAg = preservation.GetArchivalGroup(path, null);
+            var getAg = storage.GetArchivalGroup(path, null);
             var getDlcsImages = dlcs.GetImagesFromQuery(new ImageQuery { String1 = path });
 
             await Task.WhenAll(getAg, getDlcsImages);
@@ -74,7 +74,7 @@ namespace Dashboard.Controllers
         public async Task<IActionResult> SyncAsync([FromRoute] string path)
         {
             ViewBag.Path = path;
-            var getAg = preservation.GetArchivalGroup(path, null);
+            var getAg = storage.GetArchivalGroup(path, null);
             var getDlcsImages = dlcs.GetImagesFromQuery(new ImageQuery { String1 = path });
             await Task.WhenAll(getAg, getDlcsImages);
             ArchivalGroup ag = getAg.Result!;
@@ -116,7 +116,7 @@ namespace Dashboard.Controllers
         [EnableCors(PolicyName = "IIIF")]
         public async Task<IActionResult> Manifest([FromRoute] string path)
         {
-            var getAg = preservation.GetArchivalGroup(path, null);
+            var getAg = storage.GetArchivalGroup(path, null);
             var getDlcsImages = dlcs.GetImagesFromQuery(new ImageQuery { String1 = path });
             await Task.WhenAll(getAg, getDlcsImages);
 

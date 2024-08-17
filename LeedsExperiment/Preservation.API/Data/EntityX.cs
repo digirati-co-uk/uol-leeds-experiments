@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Preservation.API.Data.Entities;
+using Storage.API.Data.Entities;
 
-namespace Preservation.API.Data;
+namespace Storage.API.Data;
 
 /// <summary>
 /// Commonly used queries/helpers for working with entities

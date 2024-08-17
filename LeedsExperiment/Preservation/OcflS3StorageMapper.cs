@@ -7,7 +7,7 @@ using Fedora.Vocab;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
-namespace Preservation;
+namespace Storage;
 
 public class OcflS3StorageMapper : IStorageMapper
 {

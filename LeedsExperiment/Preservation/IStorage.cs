@@ -1,10 +1,8 @@
 ﻿using Fedora.Abstractions;
-using Fedora.Abstractions.Transfer;
 
-namespace Preservation;
+namespace Storage;
 
-// TODO should this be IStorage?
-public interface IPreservation
+public interface IStorage
 {
     // Getting things from Fedora
     // ==========================

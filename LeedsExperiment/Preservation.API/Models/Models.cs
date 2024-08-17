@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Preservation.API.Models;
+namespace Storage.API.Models;
 
 /// <summary>
 /// Base class for Preservation API models

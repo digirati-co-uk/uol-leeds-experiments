@@ -18,8 +18,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Dlcs\Dlcs.csproj" />
     <ProjectReference Include="..\Fedora\Fedora.csproj" />
-    <ProjectReference Include="..\PreservationApiClient\PreservationApiClient.csproj" />
-    <ProjectReference Include="..\Preservation\Preservation.csproj" />
+    <ProjectReference Include="..\PreservationApiClient\StorageApiClient.csproj" />
+    <ProjectReference Include="..\Preservation\Storage.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace Preservation;
+﻿namespace Storage;
 
 public class StorageApiOptions
 {

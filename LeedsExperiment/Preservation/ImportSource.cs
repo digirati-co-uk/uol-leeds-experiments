@@ -1,7 +1,7 @@
 ﻿using Fedora.Abstractions.Transfer;
 using System.Text.Json.Serialization;
 
-namespace Preservation;
+namespace Storage;
 
 public class ImportSource
 {

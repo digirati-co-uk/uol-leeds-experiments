@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Storage.API", "Storage.API\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dashboard", "Dashboard\Dashboard.csproj", "{8D0AC003-CEDE-4330-98C4-E3205FDB4267}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Preservation", "Preservation\Preservation.csproj", "{7CB531B6-49AE-4969-ACBF-321E2BC8B179}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Storage", "Preservation\Storage.csproj", "{7CB531B6-49AE-4969-ACBF-321E2BC8B179}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "notes", "notes", "{FFBB9C8F-E3D1-4E42-83A4-C9C8228BC2A7}"
 	ProjectSection(SolutionItems) = preProject
@@ -20,11 +20,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SamplesWorker", "SamplesWor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FedoraTests", "FedoraTests\FedoraTests.csproj", "{DB5452C1-837D-46AE-A5FC-B939818A83CF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PreservationApiClient", "PreservationApiClient\PreservationApiClient.csproj", "{2714D982-D2B2-49CE-98FA-104594A26ABF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StorageApiClient", "PreservationApiClient\StorageApiClient.csproj", "{2714D982-D2B2-49CE-98FA-104594A26ABF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dlcs", "Dlcs\Dlcs.csproj", "{881D639B-D611-4962-9C1A-56A76B82FDC4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dlcs", "Dlcs\Dlcs.csproj", "{881D639B-D611-4962-9C1A-56A76B82FDC4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Preservation.API", "Preservation.API\Preservation.API.csproj", "{65F1F519-256D-4C11-B3F8-53F5779113EE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Preservation.API", "Preservation.API\Preservation.API.csproj", "{65F1F519-256D-4C11-B3F8-53F5779113EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

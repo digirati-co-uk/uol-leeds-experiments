@@ -1,6 +1,6 @@
 using Dlcs;
-using Preservation;
-using PreservationApiClient;
+using Storage;
+using StorageApiClient;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // https://learn.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests
-builder.Services.AddHttpClient<IPreservation, StorageService>(client =>
+builder.Services.AddHttpClient<IStorage, StorageService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseAddress"]!);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
