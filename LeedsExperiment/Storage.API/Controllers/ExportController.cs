@@ -74,6 +74,9 @@ public class ExportController(
                 var destKey = SafeJoin(exportKey, file.Key);
                 var resp = await awsS3Client.CopyObjectAsync(storageMap.Root, sourceKey, options.StagingBucket,
                     destKey);
+                // Get AWS to calculate the sha-256 once copied
+                // ...and store it in the metadata
+                // ...and compare it with file.Value.Hash
                 result.Files.Add($"s3://{SafeJoin(options.StagingBucket, destKey)}");
             }
 
