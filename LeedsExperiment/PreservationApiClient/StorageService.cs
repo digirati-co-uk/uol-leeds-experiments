@@ -3,6 +3,7 @@ using Fedora.Abstractions;
 using Storage;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Fedora.Abstractions.Transfer;
 
 namespace StorageApiClient;
 
@@ -18,6 +19,7 @@ public class StorageService : IStorage
     private const string exportPrefix = "api/export/";
     private const string exportInternalPrefix = "api/export/internal/";
     private const string importPrefix = "api/import/";
+    private const string sourceOperations = "api/source";
 
     public StorageService(HttpClient httpClient)
     {
@@ -168,5 +170,24 @@ public class StorageService : IStorage
             throw new InvalidOperationException("Resource is not a container");
         }
         return container;
+    }
+
+
+    public async Task<ImportSource?> GetImportSource(string? source)
+    {
+        var apiPath = $"{sourceOperations}?source={source}";
+        var sourceQuery = new Uri(apiPath, UriKind.Relative);
+        var importSource = await httpClient.GetFromJsonAsync<ImportSource>(sourceQuery);
+        return importSource;
+    }
+
+
+    public async Task<ImportSource?> CopyToNewSourceWithChecksums(string? source)
+    {
+        var apiPath = $"{sourceOperations}/copy?source={source}";
+        var sourceQuery = new Uri(apiPath, UriKind.Relative);
+        var resp = await httpClient.PostAsync(sourceQuery, null);
+        var copiedSource = await resp.Content.ReadFromJsonAsync<ImportSource?>();
+        return copiedSource;
     }
 }

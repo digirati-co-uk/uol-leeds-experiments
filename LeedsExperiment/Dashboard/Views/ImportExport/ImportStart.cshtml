@@ -7,6 +7,15 @@
     <h1 class="display-4">Import 📦 - @Model.DisplayName</h1>
     <p>Path: @Model.Path</p>
 
+    @if(ViewBag.Problem != null)
+    {
+        <div class="row mt-2">
+            <div class="alert alert-danger" role="alert">
+                <p>@ViewBag.Problem</p>
+            </div>
+        </div>        
+    }
+
     @if(Model.ArchivalGroup == null)
     {
         <p>Specify a source location to create a new Archival Group at @Model.Path</p>
@@ -22,8 +31,14 @@
     <form method="get" action="/import/@(Model.Path)">
         <div class="mb-3">
             <label for="sourceKey" class="form-label">Source</label>
-            <input type="text" class="form-control" id="sourceKey" name="source" aria-describedby="sourceHelp" value="s3://uol-expts-staging-01/<...key...>" />
+            <input type="text" class="form-control" id="sourceKey" name="source" aria-describedby="sourceHelp"
+                value="@(Model.ImportSource?.Source.ToString() ?? "s3://uol-expts-staging-01/<...key...>")" />
             <div id="sourceHelp" class="form-text">Later you can choose other locations outside this bucket!</div>
+        </div>
+        <div class="mb-3">
+            <input type="checkbox" class="form-check-input" id="validateSource" name="validateSource" aria-describedby="validateSourceHelp" />
+            <label for="validateSource" class="form-check-label">Validate source first</label>
+            <div id="validateSourceHelp" class="form-text">Verify that the files in source (if S3) all have SHA-256 checksums, and offer help if not.</div>
         </div>
         @if(Model.ArchivalGroup == null)
         {
@@ -36,6 +51,60 @@
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 
+    @if(Model.ImportSource != null)
+    {
+        if (Model.ImportSource.Files.Count > 0)
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Hash</th>
+                        <th>Uri</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var bf in Model.ImportSource.Files)
+                    {
+                        <tr>
+                            <td>
+                                @if (bf.Digest.HasText())
+                                {
+                                    <span style="color:darkgreen">@bf.Digest.Substring(0, 8)</span>
+                                }
+                                else
+                                {
+                                    <span style="color:red">⚠ NO HASH</span>
+                                }
+                            </td>
+                            <td>
+                                @bf.ExternalLocation
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if(Model.ImportSource.Files.Any(x => string.IsNullOrWhiteSpace(x.Digest)))
+            {
+                <form method="post" action="/copysource/@(Model.Path)">
+                    <input type="hidden" name="source" value="@Model.ImportSource.Source" />
+                    <input type="hidden" name="name" value="@Model.Name" />
+                    <input type="hidden" name="copySource" value="copy" />
+
+                    <button type="submit" class="btn btn-primary" aria-describedby="copyhelp">Create new source</button>
+                    <div id="copyhelp" class="form-text">Create a new source location alongside the old, with hash (digest) applied.</div>
+                </form>
+            }
+        } 
+        else
+        {
+            <div class="row mt-2">
+                <div class="alert alert-danger" role="alert">
+                    <p>There are no files at the source!</p>
+                </div>   
+            </div>
+        }
+    }
 
 
 </div>

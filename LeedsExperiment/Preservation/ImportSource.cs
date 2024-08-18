@@ -5,12 +5,14 @@ namespace Storage;
 
 public class ImportSource
 {
+    public Uri Source { get; set; }
+
     [JsonPropertyName("containers")]
     [JsonPropertyOrder(1)]
     public List<ContainerDirectory> Containers { get; set; } = [];
 
     /// <summary>
-    /// Fedora binaries that need to be created to synchronise the Archival Group object with the source
+    /// Binaries that need to be created to synchronise the Archival Group object with the source
     /// </summary>
     [JsonPropertyName("files")]
     [JsonPropertyOrder(2)]

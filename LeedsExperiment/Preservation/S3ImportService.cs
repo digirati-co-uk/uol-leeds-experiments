@@ -4,6 +4,7 @@ using Amazon.S3.Util;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
+using Microsoft.Extensions.Options;
 
 namespace Storage;
 
@@ -23,14 +24,40 @@ public interface IImportService
             Uri sourceUri, 
             Uri archivalGroupUri,
             DateTime diffStart);
+
+
+    /// <summary>
+    /// Return information about an input source (e.g., S3 location), usually before you try to create an ImportJob from it
+    /// </summary>
+    /// <param name="sourceUri"></param>
+    /// <returns></returns>
+    Task<ImportSource> GetImportSource(Uri sourceUri);
+
+    /// <summary>
+    /// Copy the contents of sourceUri to a new location, this time with checksums.
+    /// </summary>
+    /// <param name="sourceUri"></param>
+    /// <returns>The Source property will be the new Uri</returns>
+    Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri);
 }
 
 /// <summary>
 /// Service responsible for generating an <see cref="ImportJob"/> that can be understood by the storage-api using
 /// S3 location as source for change.
 /// </summary>
-public class S3ImportService(IAmazonS3 s3Client) : IImportService
+public class S3ImportService : IImportService
 {
+    private IAmazonS3 s3Client;
+    private FedoraApiOptions fedoraApiSettings;
+
+    public S3ImportService(
+        IAmazonS3 s3Client,
+        IOptions<FedoraApiOptions> fedoraApiOptions)
+    {
+        this.s3Client = s3Client;
+        fedoraApiSettings = fedoraApiOptions.Value;
+    }
+
     private readonly FileExtensionContentTypeProvider contentTypeProvider = new();
 
     public async Task<ImportJob> GetImportJob(
@@ -40,13 +67,22 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
         DateTime diffStart) // passing diffStart feels off, this should be able to do it here
     {
         // TODO - how does PreservationAPI calling this know the archivalGroupUri as that's the Fedora URI?
-        var importSource = await GetImportSource(sourceUri, archivalGroupUri);
+
+        // And also, see below, this needs to know fedoraApiSettings.ApiRoot to strip the Uri to get the relative path.
+
+        // I think it should just take:
+        //
+        // ArchivalGroup? archivalGroup,
+        // Uri sourceUri, 
+        // string archivalGroupPath - e.g., my-stuff/my-ag
+
+        var importSource = await GetImportSource(sourceUri, archivalGroupUri, true);
         
         var importJob = new ImportJob
         {
             ArchivalGroupUri = archivalGroupUri,
             StorageType = StorageTypes.S3, // all we support for now
-            ArchivalGroupPath = archivalGroupUri.AbsolutePath, // is this safe?
+            ArchivalGroupPath = archivalGroupUri.ToString().Replace(fedoraApiSettings.ApiRoot, ""), 
             Source = sourceUri.ToString(),
             DiffStart = diffStart
         };
@@ -69,9 +105,59 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
         return importJob;
     }
 
+    public async Task<ImportSource> GetImportSource(Uri source)
+    {
+        // yuk - didn't want to make BinaryFile.Parent nullable so am passing this dummy for now
+        // But maybe it should be nullable - it can represent a file in S3 that doesn't yet know
+        // where it's going.
+        //                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        var importSource = await GetImportSource(source, new Uri("https://example.org/parent"), false);
+        return importSource;
+    }
+
+    public async Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri)
+    {
+        var existingSource = await GetImportSource(sourceUri);
+        // we're just going to create a copy of the source alongside the old one, and not worry about unlikely collisions
+        var existingStr = sourceUri.ToString();
+        const string suffix = "-CHK";
+        string? newStr;
+        if (existingStr[^1] == '/')
+        {
+            newStr = $"{existingStr.Remove(existingStr.Length - 1)}{suffix}/";
+        }
+        else
+        {
+            newStr = $"{existingStr}{suffix}";
+        }
+
+        foreach (var file in existingSource.Files)
+        {
+            var existingFileUri = new AmazonS3Uri(file.ExternalLocation);
+            var newFileUri = new AmazonS3Uri(file.ExternalLocation.Replace(existingStr, newStr));
+            if(existingFileUri.Bucket != newFileUri.Bucket)
+            {
+                throw new Exception("Unexpected bucket mismatch");
+            }
+            var req = new CopyObjectRequest
+            {
+                SourceBucket = existingFileUri.Bucket,
+                SourceKey = existingFileUri.Key,
+                DestinationBucket = newFileUri.Bucket,
+                DestinationKey = newFileUri.Key,
+                ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+            };
+            await s3Client.CopyObjectAsync(req);
+        }
+
+        var newSource = await GetImportSource(new Uri(newStr));
+        return newSource;
+    }
+
+
     // Generate an ImportSource for S3 - if we want to support alternative means of diff-generation (e.g. METS)
     // then would it just be a case of having alternative implementations of this?
-    private async Task<ImportSource> GetImportSource(Uri source, Uri intendedParent)
+    private async Task<ImportSource> GetImportSource(Uri source, Uri? intendedParent, bool errorIfMissingChecksum)
     {
         // NOTE - this is refactored from Storage ImportController to common class for use by Preservation
         
@@ -101,7 +187,7 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             // application/x-directory
         };
 
-        var importSource = new ImportSource();
+        var importSource = new ImportSource { Source = source };
         var response = await s3Client.ListObjectsV2Async(listObjectsReq);
         var containerPaths = new HashSet<string>();
         foreach (S3Object obj in response.S3Objects)
@@ -126,7 +212,7 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             // Get the SHA256 algorithm from AWS directly rather than compute it here
             // If the S3 file does not already have the SHA-256 in metadata, then it's an error
             string? sha256 = await AwsChecksum.GetHexChecksumAsync(s3Client, s3Uri.Bucket, obj.Key);
-            if (string.IsNullOrWhiteSpace(sha256))
+            if (string.IsNullOrWhiteSpace(sha256) && errorIfMissingChecksum)
             {
                 throw new InvalidOperationException($"S3 Key at {obj.Key} does not have SHA256 Checksum in its attributes");
             }
@@ -254,4 +340,5 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
         }
         return contentType!;
     }
+
 }
