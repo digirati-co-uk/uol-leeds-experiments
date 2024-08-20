@@ -1,4 +1,4 @@
-﻿namespace Storage.API.Services.ImportJobs;
+﻿namespace Preservation.API.Services.ImportJobs;
 
 public class ImportJobExecutorService(
     IServiceScopeFactory serviceScopeFactory,

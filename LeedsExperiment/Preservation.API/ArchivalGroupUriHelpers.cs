@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Storage.API;
+namespace Preservation.API;
 
 public static class ArchivalGroupUriHelpers
 {

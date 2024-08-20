@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Storage.API.Data.Entities;
+using Preservation.API.Data.Entities;
 
-namespace Storage.API.Data;
+namespace Preservation.API.Data;
 
 public class PreservationContext(DbContextOptions<PreservationContext> options) : DbContext(options)
 {

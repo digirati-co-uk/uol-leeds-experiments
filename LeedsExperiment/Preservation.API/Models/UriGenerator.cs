@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Options;
 
-namespace Storage.API.Models;
+namespace Preservation.API.Models;
 
 public class UriGenerator
 {
