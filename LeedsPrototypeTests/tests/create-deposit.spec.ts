@@ -107,6 +107,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // Notice that the server has used information in the METS as well as the S3 layout.
         //  - It has extracted checksums from the METS
         //  - It has extracted the "real" file names from METS
+        //  - It has extracted the name of the Archival Group from the METS
         //  - (it would also extract real Container names too)
 
         // We will just execute the job as-is, by POSTing it:
@@ -114,14 +115,11 @@ test.describe('Create a deposit and put some files in it', () => {
             data: diffImportJob
         });
 
-        // OK HOW DO I GIVE the DigitalOBJECT a name here????
-        // Can I even do that in Stprage API - how do I patch names of AGs? Or containers?
+        // Not shown - assign a name to the digital object in the initial creation importJob
+        // Instead we will look for a name in the METS file.
 
         let importJobResult = await executeImportJobReq.json();
         console.log(importJobResult);
-        // There is a way of executing a diff import job in one step, without having to see the body
-        // - see https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#execute-import-job
-        // but the above allows us to see what we are about to ask for.
         expect(importJobResult).toEqual(expect.objectContaining({
             "@id": expect(String).not.toEqual(diffJobGeneratorUri),
             type: 'ImportJobResult',
@@ -129,6 +127,10 @@ test.describe('Create a deposit and put some files in it', () => {
             status: 'waiting',
             digitalObject: preservedDigitalObjectUri
         }));
+        // There is a way of executing a diff import job in one step, without having to see the body
+        // - see https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#execute-import-job
+        // but the above allows us to see what we are about to ask for.
+        // It also allows us to override the name or other aspects.
 
         // We could now go away and do something else, as this job might in a long queue.
         // For this test we'll just wait for it to complete - which means that the status is
