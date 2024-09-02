@@ -76,6 +76,13 @@ public class S3ImportService : IImportService
         // Uri sourceUri, 
         // string archivalGroupPath - e.g., my-stuff/my-ag
 
+
+        // don't pass true as third param
+        // identify METS as we traverse? Or before
+        // mets = GetMetsInfo(sourceUri) (object representing just the things we want, that could also be our JSON format)
+        // container structure with names... can these be containers and binaries too?
+        // get mets s3 key so we can forgive its lack of S3
+        // pass in metsInfo and use 
         var importSource = await GetImportSource(sourceUri, archivalGroupUri, true);
         
         var importJob = new ImportJob

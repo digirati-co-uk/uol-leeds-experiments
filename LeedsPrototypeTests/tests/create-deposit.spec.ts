@@ -59,7 +59,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // using whatever AWS S3 library you like. It is enforced later.
         const sourceDir = 'samples/10315s/';
         const files = [
-            '10315.METS.xml',
+            '10315.METS.xml',             // we don't need to tell the API that this is the METS file, it will deduce it
             'objects/372705s_001.jpg',
             'objects/372705s_002.jpg',
             'objects/372705s_003.jpg',
@@ -199,6 +199,7 @@ async function uploadFile(
         Body: readFileSync(localFilePath)
         // Note that we don't need to set this if the METS file provides it:
         // ChecksumAlgorithm: "SHA256"
+        // But if you DO provide this information in S3 metadata, we will validate it against the METS file.
     });
 
     await s3.send(putCmd);
