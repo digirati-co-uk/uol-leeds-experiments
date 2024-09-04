@@ -16114,7 +16114,7 @@
     <mets:structMap TYPE="physical" ID="structMap_1" LABEL="Archivematica default">
         <mets:div TYPE="Directory" LABEL="ARTCOOB9-299eb16f-1e62-4bf6-b259-c82146153711" DMDID="dmdSec_1">
             <mets:div TYPE="Directory" LABEL="objects" DMDID="dmdSec_2">
-                <mets:div TYPE="Directory" LABEL="Edgware_Community_Hospital">
+                <mets:div TYPE="Directory" LABEL="Edgware Community Hospital">
                     <mets:div TYPE="Item" LABEL="03_05_01.tif">
                         <mets:fptr FILEID="file-23eacb1b-d9d3-4181-9601-c10dc8a23a48" />
                     </mets:div>
@@ -16186,7 +16186,7 @@
                     <mets:div TYPE="Item" LABEL="Kings_1913_plan.jpg">
                         <mets:fptr FILEID="file-245d20e2-dbf0-42a2-bba2-7c280ea560a8" />
                     </mets:div>
-                    <mets:div TYPE="Item" LABEL="Kings_1913_plan_altered.jpg">
+                    <mets:div TYPE="Item" LABEL="Kings 1913 plan altered.jpg">
                         <mets:fptr FILEID="file-ac98ea19-e461-45c9-bc0c-a1dd70f2a096" />
                     </mets:div>
                 </mets:div>

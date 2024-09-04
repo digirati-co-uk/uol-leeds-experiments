@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Fedora\Fedora.csproj" />
     <ProjectReference Include="..\PreservationApiClient\StorageApiClient.csproj" />
     <ProjectReference Include="..\Preservation\Storage.csproj" />
+    <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
 </Project>

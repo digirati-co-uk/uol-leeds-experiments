@@ -45,4 +45,13 @@ public abstract class ResourceWithParentUri
         }
         return $"{Name} (/{Slug})";
     }
+
+    public override string ToString()
+    {
+        if(Path != null)
+        {
+            return $"{Path} [{Name}]";
+        }
+        return base.ToString(); 
+    }
 }

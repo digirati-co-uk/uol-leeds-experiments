@@ -1,6 +1,4 @@
-﻿using Utils;
-
-namespace Dashboard.Borrowed
+﻿namespace Utils
 {
     public class S3Util
     {

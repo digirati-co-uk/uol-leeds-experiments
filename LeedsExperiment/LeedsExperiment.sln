@@ -26,11 +26,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dlcs", "Dlcs\Dlcs.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Preservation.API", "Preservation.API\Preservation.API.csproj", "{65F1F519-256D-4C11-B3F8-53F5779113EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetsParser", "MetsParser\MetsParser.csproj", "{54AB5F7D-A565-4565-938D-4630B42F10C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetsParser", "MetsParser\MetsParser.csproj", "{54AB5F7D-A565-4565-938D-4630B42F10C9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5CC04298-37E7-4932-BEC9-3EB1A5BDCA69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetsParserTests", "tests\MetsParserTests\MetsParserTests.csproj", "{76121C1B-6B49-4F33-95EF-ADD22D2F27E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetsParserTests", "tests\MetsParserTests\MetsParserTests.csproj", "{76121C1B-6B49-4F33-95EF-ADD22D2F27E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{992C93C1-46D1-4DCB-B95D-C303BB4F9CAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,6 +84,10 @@ Global
 		{76121C1B-6B49-4F33-95EF-ADD22D2F27E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76121C1B-6B49-4F33-95EF-ADD22D2F27E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76121C1B-6B49-4F33-95EF-ADD22D2F27E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{992C93C1-46D1-4DCB-B95D-C303BB4F9CAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{992C93C1-46D1-4DCB-B95D-C303BB4F9CAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{992C93C1-46D1-4DCB-B95D-C303BB4F9CAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{992C93C1-46D1-4DCB-B95D-C303BB4F9CAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
