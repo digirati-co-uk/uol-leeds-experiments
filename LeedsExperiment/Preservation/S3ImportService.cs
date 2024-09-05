@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Amazon.Util;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
@@ -23,7 +24,8 @@ public interface IImportService
             ArchivalGroup? archivalGroup, 
             Uri sourceUri, 
             Uri archivalGroupUri,
-            DateTime diffStart);
+            DateTime diffStart,
+            bool errorIfMissingS3Checksum);
 
 
     /// <summary>
@@ -39,6 +41,8 @@ public interface IImportService
     /// <param name="sourceUri"></param>
     /// <returns>The Source property will be the new Uri</returns>
     Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri);
+
+    Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup);
 }
 
 /// <summary>
@@ -48,14 +52,12 @@ public interface IImportService
 public class S3ImportService : IImportService
 {
     private IAmazonS3 s3Client;
-    private FedoraApiOptions fedoraApiSettings;
 
     public S3ImportService(
         IAmazonS3 s3Client,
         IOptions<FedoraApiOptions> fedoraApiOptions)
     {
         this.s3Client = s3Client;
-        fedoraApiSettings = fedoraApiOptions.Value;
     }
 
     private readonly FileExtensionContentTypeProvider contentTypeProvider = new();
@@ -64,7 +66,10 @@ public class S3ImportService : IImportService
         ArchivalGroup? archivalGroup, 
         Uri sourceUri, 
         Uri archivalGroupUri,
-        DateTime diffStart) // passing diffStart feels off, this should be able to do it here
+        DateTime diffStart, 
+        bool errorIfMissingS3Checksum
+
+        ) // passing diffStart feels off, this should be able to do it here
     {
         // TODO - how does PreservationAPI calling this know the archivalGroupUri as that's the Fedora URI?
 
@@ -83,13 +88,13 @@ public class S3ImportService : IImportService
         // container structure with names... can these be containers and binaries too?
         // get mets s3 key so we can forgive its lack of S3
         // pass in metsInfo and use 
-        var importSource = await GetImportSource(sourceUri, archivalGroupUri, true);
+        var importSource = await GetImportSource(sourceUri, archivalGroupUri, errorIfMissingS3Checksum);
         
         var importJob = new ImportJob
         {
             ArchivalGroupUri = archivalGroupUri,
             StorageType = StorageTypes.S3, // all we support for now
-            ArchivalGroupPath = archivalGroupUri.ToString().Replace(fedoraApiSettings.ApiRoot, ""), 
+            ArchivalGroupPath = Utils.ArchivalGroupUriHelpers.GetArchivalGroupPath(archivalGroupUri), 
             Source = sourceUri.ToString(),
             DiffStart = diffStart
         };
@@ -270,6 +275,8 @@ public class S3ImportService : IImportService
         // What's the best way to diff?
         // This is very crude and can't spot a container being renamed
 
+        // see https://universityofleeds.visualstudio.com/Library/_backlogs/backlog/DLIP/Epics?workitem=77035
+
         var allExistingContainers = new List<ContainerDirectory>();
         var allExistingFiles = new List<BinaryFile>();
         TraverseContainers(archivalGroup, allExistingContainers, allExistingFiles, archivalGroup);
@@ -348,4 +355,22 @@ public class S3ImportService : IImportService
         return contentType!;
     }
 
+    public async Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup)
+    {
+        var metsParser = new MetsParser.Parser(s3Client);
+        var metsFile = await metsParser.ResolveAndParseAsync(new Uri(importJob.Source));
+        if(metsFile.Self == null)
+        {
+            // no mets file was found
+            // log this? treat as error?
+            return;
+        }
+
+
+        // we might need to 
+        // take checksums from the mets file and add them to the import job
+        // validate the import job against the mets file - do they agree? Are the files where they say they are?
+        // update the `name` properties of files in the import job
+        // we might also need to add new tasks to the import job for containers and files that just have `name` changes (TODO - not in prototype)
+    }
 }

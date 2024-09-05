@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {APIRequestContext, expect, test} from '@playwright/test';
 import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {fromIni} from '@aws-sdk/credential-providers';
 import {parseS3Url} from 'amazon-s3-url'
@@ -20,6 +20,13 @@ test.describe('Create a deposit and put some files in it', () => {
 
         // Set a very long timeout so you can debug on breakpoints or whatnot.
         test.setTimeout(1000000);
+
+        // Before we start, we want to make sure we have a "folder" in the Digital Preservation Repository to
+        // save Digital Objects in. You might want to save 1000s of digital objects under the same
+        // parent location - but that location needs to exist! Goobi isn't the only user of the repository.
+        // And also, Goobi can create child structure.
+        // This will be a no-op except the very first time.
+        await ensurePath("/testing/digitised", request);
 
         // We want to have a new WORKING SPACE - a _Deposit_
         // So we ask for one:
@@ -89,7 +96,7 @@ test.describe('Create a deposit and put some files in it', () => {
                 submissionText: "You can write what you like here"
             }
         });
-        expect(await depositWithDestination.json()).toContainEqual(expect.objectContaining({
+        expect(await depositWithDestination.json()).toEqual(expect.objectContaining({
             "@id": newDeposit["@id"],  // verify that it's the same deposit!
             digitalObject: preservedDigitalObjectUri
         }));
@@ -212,4 +219,20 @@ function getShortTimestamp(){
     const dayOfYear = (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
     const secondOfDay = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
     return `-${String(dayOfYear).padStart(3, '0')}-${String(secondOfDay).padStart(5, '0')}`
+}
+
+async function ensurePath(path: string, request: APIRequestContext) {
+    const parts = path.split('/');
+    let buildPath = "/repository";
+    for (const part of parts) {
+        if(part){
+            buildPath += '/' + part;
+            const resourceResp = await request.get(buildPath);
+            if(resourceResp.status() == 404){
+                // This is always a container, you can't create other kinds of resource outside of a deposit
+                const containerResp = await request.post(buildPath);
+            }
+            // ignore other status codes for now
+        }
+    }
 }

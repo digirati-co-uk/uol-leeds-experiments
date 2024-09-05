@@ -4,7 +4,6 @@ using Amazon.S3.Util;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
 using System.Xml.Linq;
-using Utils;
 
 namespace MetsParser
 {
@@ -227,7 +226,7 @@ namespace MetsParser
                             Name = firstXmlFile.Name,
                             Path = firstXmlFile.Name,
                             StorageType = StorageTypes.FileSystem,
-                            Digest = Storage.Checksum.Sha256FromFile(firstXmlFile)
+                            Digest = Utils.Checksum.Sha256FromFile(firstXmlFile)
                         };
                     }
                     break;
@@ -245,7 +244,7 @@ namespace MetsParser
                     if(firstXmlKey != null)
                     {
                         var s3Stream = await s3Client!.GetObjectStreamAsync(firstXmlKey.BucketName, firstXmlKey.Key, null);
-                        var digest = Storage.Checksum.Sha256FromStream(s3Stream);
+                        var digest = Utils.Checksum.Sha256FromStream(s3Stream);
                         var name = firstXmlKey.Key.Replace(prefix, string.Empty);
                         return new BinaryFile()
                         {
