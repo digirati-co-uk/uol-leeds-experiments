@@ -177,6 +177,13 @@ public class Binary : PreservationResource
     /// </summary>
     [JsonPropertyOrder(13)]
     public Uri? PartOf { get; set; }
+
+    /// <summary>
+    /// The internet type of the file, e.g., `application/pdf`. The Preservation platform will usually deduce this for you, 
+    /// it is not required on ingest.
+    /// </summary>
+    [JsonPropertyOrder(14)]
+    public string? ContentType { get; set; }
 }
 
 /// <summary>
@@ -268,7 +275,14 @@ public class PreservationImportJob : PreservationResource
     /// </summary>
     [JsonPropertyOrder(11)]
     public Uri DigitalObject { get; set; }
-    
+
+
+    /// <summary>
+    /// For a new digitalObject, the dc:title (name) to give the object in the repository.
+    /// </summary>
+    [JsonPropertyOrder(11)]
+    public string DigitalObjectName { get; set; }
+
     /// <summary>
     /// Always provided when you ask the API to generate an ImportJob as a diff and the DigitalObject already exists.
     /// May be null for a new object

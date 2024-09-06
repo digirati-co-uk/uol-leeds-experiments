@@ -16,7 +16,7 @@ namespace MetsParser
             this.s3Client = s3Client;            
         }
 
-        public void Populate(MetsFile mets, XDocument xMets)
+        public void PopulateFromMets(MetsFile mets, XDocument xMets)
         {
             var modsTitle = xMets.Descendants(XNames.mods + "title").FirstOrDefault()?.Value;
             if (!string.IsNullOrWhiteSpace(modsTitle))
@@ -136,6 +136,7 @@ namespace MetsParser
                     if (string.IsNullOrEmpty(mimeType))
                     {
                         // In the real version, we would have got this from Siegfried for born-digital archives
+                        // but we'd still be reading it from the METS file we made.
                         if (MimeTypes.TryGetMimeType(parts[^1], out var foundMimeType))
                         {
                             mimeType = foundMimeType;
@@ -199,8 +200,9 @@ namespace MetsParser
             };
             if(mets.Self != null)
             {
+                mets.Files.Add(mets.Self); // this assumes that the METS file doesn't include itself
                 var xMets = await LoadXml(mets.Self);
-                Populate(mets, xMets);
+                PopulateFromMets(mets, xMets);
             }
             return mets;
         }

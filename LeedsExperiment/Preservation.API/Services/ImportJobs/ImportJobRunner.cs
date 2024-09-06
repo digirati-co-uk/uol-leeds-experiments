@@ -45,9 +45,6 @@ public class ImportJobRunner(
 
             importJob.IsUpdate = await isUpdate;
             
-            // TODO - should this be set in the StorageAPI?
-            importJob.ArchivalGroupName = importJob.ArchivalGroupUri!.Slug();
-
             logger.LogInformation("Executing import job {ImportJobId}...", importJobId);
             var executedImportJob = await storageService.Import(importJob);
             

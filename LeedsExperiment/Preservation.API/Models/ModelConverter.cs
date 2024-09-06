@@ -25,6 +25,7 @@ public class ModelConverter(UriGenerator uriGenerator)
 
         var importJob = new ImportJob
         {
+            ArchivalGroupName = preservationImportJob.DigitalObjectName,
             Source = deposit.S3Root.ToString(),
             StorageType = "S3",
             ArchivalGroupPath = ArchivalGroupUriHelpers.GetArchivalGroupPath(preservationImportJob.DigitalObject),
@@ -93,7 +94,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             DigitalObject = entity.DigitalObject,
             Deposit = uriGenerator.GetDepositPath(entity.Deposit),
             OriginalImportJobId = entity.OriginalImportJobId,
-            ImportJob = new Uri("https://todo"),
+            ImportJob = uriGenerator.GetImportJobUri(entity.Deposit, entity.Id),
             Status = entity.Status,
             Errors = string.IsNullOrEmpty(entity.Errors) ? null : JsonSerializer.Deserialize<Error[]>(entity.Errors),
             ContainersAdded = string.IsNullOrEmpty(entity.ContainersAdded)
@@ -116,8 +117,9 @@ public class ModelConverter(UriGenerator uriGenerator)
     public PreservationImportJob ToPreservationResource(ImportJob importJob, string depositId)
         => new()
         {
-            Id = new Uri("https://todo"),
+            Id = uriGenerator.GetDiffImportJobUri(depositId),            
             DigitalObject = importJob.ArchivalGroupUri!,
+            DigitalObjectName = importJob.ArchivalGroupName!,
             Deposit = uriGenerator.GetDepositPath(depositId),
             Created = importJob.DiffStart,
             CreatedBy = new Uri("https://todo"),
@@ -152,6 +154,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             Name = fedoraBinary.FileName,
             Digest = fedoraBinary.Digest,
             PartOf = uriGenerator.GetRepositoryPath(fedoraBinary.PartOf),
+            ContentType = fedoraBinary.ContentType
         };
 
         MapBasicsFromStorageResource(binary, fedoraBinary);
@@ -165,7 +168,8 @@ public class ModelConverter(UriGenerator uriGenerator)
             Content = new Uri("https://todo"),
             Name = binaryFile.Name,
             Digest = binaryFile.Digest,
-            PartOf = uriGenerator.GetRepositoryPath(binaryFile.Parent)
+            PartOf = uriGenerator.GetRepositoryPath(binaryFile.Parent),
+            ContentType = binaryFile.ContentType,
         };
 
     public Container ToPresentationContainer(ContainerDirectory containerDirectory) =>
@@ -193,7 +197,7 @@ public class ModelConverter(UriGenerator uriGenerator)
             Name = binary.Name!,
             Parent = ArchivalGroupUriHelpers.GetArchivalGroupRelativePath(binary.PartOf!),
             Path = path,
-            ContentType = "preservation/not-implemented",
+            ContentType = binary.ContentType!,
             StorageType = "S3",
             Digest = binary.Digest,
             ExternalLocation = $"{depositEntity.S3Root.ToString()}{path}",

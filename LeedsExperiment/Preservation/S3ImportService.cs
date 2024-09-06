@@ -6,6 +6,7 @@ using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
 using Microsoft.Extensions.Options;
+using Utils;
 
 namespace Storage;
 
@@ -366,11 +367,54 @@ public class S3ImportService : IImportService
             return;
         }
 
+        // (the existing Archival Group is fully populated - all files and folders, recurse=true)
+
 
         // we might need to 
         // take checksums from the mets file and add them to the import job
         // validate the import job against the mets file - do they agree? Are the files where they say they are?
         // update the `name` properties of files in the import job
         // we might also need to add new tasks to the import job for containers and files that just have `name` changes (TODO - not in prototype)
+
+        // First pass, just embellish the import job from METS without looking at the existingArchivalGroup
+
+        var filesToCompare = new List<BinaryFile>();
+        filesToCompare.AddRange(importJob.FilesToAdd);
+        filesToCompare.AddRange(importJob.FilesToPatch);
+        foreach (var bf in filesToCompare)
+        {
+            var fileInMets = metsFile.Files.SingleOrDefault(f => f.Path == bf.Path);
+            if(fileInMets != null)
+            {
+                if (fileInMets.Digest.HasText())
+                {
+                    bf.Digest = fileInMets.Digest;
+                }
+                if (fileInMets.Name.HasText())
+                {
+                    bf.Name = fileInMets.Name;
+                }
+            }
+        }
+
+        var containersToCompare = new List<ContainerDirectory>();
+        containersToCompare.AddRange(importJob.ContainersToAdd);
+        // we have no importJob.ContainersToPatch yet
+        foreach(var cd in containersToCompare)
+        {
+            var containerInMets = metsFile.Directories.SingleOrDefault(d => d.Path == cd.Path);
+            if(containerInMets != null)
+            {
+                if (containerInMets.Name.HasText())
+                {
+                    cd.Name = containerInMets.Name;
+                }
+            }
+        }
+
+        if(metsFile.Name.HasText())
+        {
+            importJob.ArchivalGroupName = metsFile.Name;
+        }
     }
 }

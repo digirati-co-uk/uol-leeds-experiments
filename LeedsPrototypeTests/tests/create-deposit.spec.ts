@@ -25,8 +25,8 @@ test.describe('Create a deposit and put some files in it', () => {
         // save Digital Objects in. You might want to save 1000s of digital objects under the same
         // parent location - but that location needs to exist! Goobi isn't the only user of the repository.
         // And also, Goobi can create child structure.
-        // This will be a no-op except the very first time.
-        await ensurePath("/testing/digitised", request);
+        // This will be a no-op except the very first time, commenting out for now
+        // await ensurePath("/testing/digitised", request);
 
         // We want to have a new WORKING SPACE - a _Deposit_
         // So we ask for one:
@@ -128,7 +128,6 @@ test.describe('Create a deposit and put some files in it', () => {
         let importJobResult = await executeImportJobReq.json();
         console.log(importJobResult);
         expect(importJobResult).toEqual(expect.objectContaining({
-            "@id": expect(String).not.toEqual(diffJobGeneratorUri),
             type: 'ImportJobResult',
             originalImportJobId: diffJobGeneratorUri,
             status: 'waiting',
@@ -145,31 +144,48 @@ test.describe('Create a deposit and put some files in it', () => {
         await expect.poll(async () => {
             const ijrReq = await request.get(importJobResult['@id']);
             const ijr = await ijrReq.json();
+            console.log("status: " + ijr.status);
             return ijr.status;
         }, {
-            timeout: 2000 // wait 2 seconds each time
+            intervals: [2000], // every 2 seconds
+            timeout: 60000 // allow 1 minute to complete
         }).toMatch(/completed.*/);
 
+        // #######################################################################
         // Now we should have a preserved digital object in the repository:
         const digitalObjectReq = await request.get(preservedDigitalObjectUri);
-            expect(digitalObjectReq.ok()).toBeTruthy();
-            expect(await digitalObjectReq.json()).toContainEqual(expect.objectContaining({
-                '@id': preservedDigitalObjectUri,
-                type: 'DigitalObject',
-
-
-
+        expect(digitalObjectReq.ok()).toBeTruthy();
+        const digitalObject = await digitalObjectReq.json();
+        console.log(digitalObject);
+        expect(digitalObject).toEqual(expect.objectContaining({
+            '@id': preservedDigitalObjectUri,
+            type: 'DigitalObject',
+            name: '[Example title]', // This will have been read from the METS file  <mods:title>
+            version: expect.objectContaining({name: 'v1'}),  // and we expect it to be at version 1
+            binaries: expect.arrayContaining(
+            [
+                // and it has a METS file in the root
+                expect.objectContaining({'@id': expect.stringContaining('10315.METS.xml')})
+            ]),
+            containers: expect.arrayContaining(
+            [
+                // and an objects folder with 4 JPEGs in it
+                expect.objectContaining(
+                {
+                    type: 'Container',
+                    name: 'objects',
+                    binaries: expect.arrayContaining(
+                        [
+                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_001.jpg')}),
+                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_002.jpg')}),
+                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_003.jpg')}),
+                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_004.jpg')}),
+                        ]
+                    )
+                }
+                )
+            ])
         }));
-
-
-
-
-
-
-
-
-
-
     });
 });
 
