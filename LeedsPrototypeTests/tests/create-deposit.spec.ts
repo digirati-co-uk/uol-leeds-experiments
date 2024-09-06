@@ -1,8 +1,5 @@
-import {APIRequestContext, expect, test} from '@playwright/test';
-import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
-import {fromIni} from '@aws-sdk/credential-providers';
-import {parseS3Url} from 'amazon-s3-url'
-import {readFileSync} from "fs";
+import { expect, test} from '@playwright/test';
+import {getS3Client, uploadFile, getShortTimestamp, ensurePath} from './common-utils'
 
 // Scenario:
 // A completely new digital object / package / book / etc.
@@ -30,7 +27,10 @@ test.describe('Create a deposit and put some files in it', () => {
 
         // We want to have a new WORKING SPACE - a _Deposit_
         // So we ask for one:
+
+        // ### API INTERACTION ###
         const depositReq = await request.post('/deposits');
+
         expect(depositReq.status()).toBe(201);
         newDeposit = await depositReq.json();
         // https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#deposit
@@ -56,8 +56,10 @@ test.describe('Create a deposit and put some files in it', () => {
         // We can spend as long as we like here - seconds, as below.
         // Or we can leave this "open" for days, updating files as we like, in multiple
         // separate operations.
+        // ******************************
         // At no point in uploading files are we interacting with the Preservation API.
         // Only pure AWS S3 APIs.
+        // ******************************
         // For simplicity, we're going to use the same relative paths in the Deposit as we have locally on disk.
         // We don't HAVE to do this, they can take any layout in the bucket, as long as:
         //  - they are all paths that *start with* deposit.files (an s3 URI)
@@ -66,7 +68,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // using whatever AWS S3 library you like. It is enforced later.
         const sourceDir = 'samples/10315s/';
         const files = [
-            '10315.METS.xml',             // we don't need to tell the API that this is the METS file, it will deduce it
+            '10315.METS.xml',             // we don't need to tell the API that this is the METS file, it will find it
             'objects/372705s_001.jpg',
             'objects/372705s_002.jpg',
             'objects/372705s_003.jpg',
@@ -83,19 +85,23 @@ test.describe('Create a deposit and put some files in it', () => {
         // A simpler method for this initial save to preservation is to ask the API to generate
         // an ImportJob for us, from the difference between the digital object in Preservation,
         // and the file in the Deposit.
+
         // However, we need to provide one additional piece of information:
-        let preservedDigitalObjectUri = "https://localhost:7169/repository/testing/digitised/MS-10315";
-
-        // To allow this to be run multiple times without conflicts, I'm going to append a timestamp to this URI.
+        // the URI (location) of the digital object in the repository - where we are going to save it
+        // To allow the same object to be created multiple times without having to
+        // clear out the repository, I'm going to append a timestamp to this URI.
         // WE WOULD NOT DO THAT IN A REAL SCENARIO!
-        preservedDigitalObjectUri += getShortTimestamp();
+        let preservedDigitalObjectUri = "https://localhost:7169/repository/testing/digitised/MS-10315" + getShortTimestamp();
 
+        // ### API INTERACTION ###
         const depositWithDestination = await request.patch(newDeposit["@id"], {
             data: {
                 digitalObject: preservedDigitalObjectUri,
                 submissionText: "You can write what you like here"
             }
         });
+
+
         expect(await depositWithDestination.json()).toEqual(expect.objectContaining({
             "@id": newDeposit["@id"],  // verify that it's the same deposit!
             digitalObject: preservedDigitalObjectUri
@@ -106,7 +112,11 @@ test.describe('Create a deposit and put some files in it', () => {
 
         // Now we can get the API to generate an ImportJob for us:
         const diffJobGeneratorUri = newDeposit['@id'] + '/importJobs/diff';
+
+
+        // ### API INTERACTION ###
         const diffReq = await request.get(diffJobGeneratorUri);
+
         const diffImportJob = await diffReq.json();
         console.log(diffImportJob);
 
@@ -114,16 +124,15 @@ test.describe('Create a deposit and put some files in it', () => {
         // Notice that the server has used information in the METS as well as the S3 layout.
         //  - It has extracted checksums from the METS
         //  - It has extracted the "real" file names from METS
-        //  - It has extracted the name of the Archival Group from the METS
+        //  - It has extracted the name of the Archival Group from the METS (mods:title)
         //  - (it would also extract real Container names too)
 
         // We will just execute the job as-is, by POSTing it:
+
+        // ### API INTERACTION ###
         const executeImportJobReq = await request.post(newDeposit['@id'] + '/importJobs', {
             data: diffImportJob
         });
-
-        // Not shown - assign a name to the digital object in the initial creation importJob
-        // Instead we will look for a name in the METS file.
 
         let importJobResult = await executeImportJobReq.json();
         console.log(importJobResult);
@@ -142,7 +151,10 @@ test.describe('Create a deposit and put some files in it', () => {
         // For this test we'll just wait for it to complete - which means that the status is
         // either "completed" or "completedWithErrors",
         await expect.poll(async () => {
+
+            // ### API INTERACTION ###
             const ijrReq = await request.get(importJobResult['@id']);
+
             const ijr = await ijrReq.json();
             console.log("status: " + ijr.status);
             return ijr.status;
@@ -151,9 +163,11 @@ test.describe('Create a deposit and put some files in it', () => {
             timeout: 60000 // allow 1 minute to complete
         }).toMatch(/completed.*/);
 
-        // #######################################################################
         // Now we should have a preserved digital object in the repository:
+
+        // ### API INTERACTION ###
         const digitalObjectReq = await request.get(preservedDigitalObjectUri);
+
         expect(digitalObjectReq.ok()).toBeTruthy();
         const digitalObject = await digitalObjectReq.json();
         console.log(digitalObject);
@@ -191,64 +205,8 @@ test.describe('Create a deposit and put some files in it', () => {
 
 
 
-function getS3Client() {
-    return new S3Client({
-        region: "eu-west-1",
-        credentials: fromIni({profile: 'uol'})
-    });
-}
 
-// This isn't using any of the custom Leeds API at all.
-// All file transfer is done using AWS APIs, into S3 buckets.
-// You don't even need to set the SHA256 checksum on the uploaded file,
-// if that checksum is provided in a METS file, allowing multiple
-// ways to get the content into S3
-async function uploadFile(
-    s3: S3Client,
-    depositUri: string,
-    localFilePath: string,
-    relativePathInDigitalObject: string) {
 
-    const s3Url = parseS3Url(depositUri);
 
-    // be forgiving of joining paths...
-    const key = s3Url.key.endsWith('/') ? s3Url.key.slice(0,-1) : s3Url.key;
-    const path = relativePathInDigitalObject.startsWith('/') ? relativePathInDigitalObject.slice(1) : relativePathInDigitalObject;
-    const pathInDeposit = key + '/' + path;
 
-    const putCmd = new PutObjectCommand({
-        Bucket: s3Url.bucket,
-        Key: pathInDeposit,
-        Body: readFileSync(localFilePath)
-        // Note that we don't need to set this if the METS file provides it:
-        // ChecksumAlgorithm: "SHA256"
-        // But if you DO provide this information in S3 metadata, we will validate it against the METS file.
-    });
 
-    await s3.send(putCmd);
-}
-
-// This is purely for demo purposes and would be no part of a real application!!
-// Its purpose is to produce a short string with very small likelihood of collisions.
-function getShortTimestamp(){
-    const date = new Date();
-    const dayOfYear = (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
-    const secondOfDay = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-    return `-${String(dayOfYear).padStart(3, '0')}-${String(secondOfDay).padStart(5, '0')}`
-}
-
-async function ensurePath(path: string, request: APIRequestContext) {
-    const parts = path.split('/');
-    let buildPath = "/repository";
-    for (const part of parts) {
-        if(part){
-            buildPath += '/' + part;
-            const resourceResp = await request.get(buildPath);
-            if(resourceResp.status() == 404){
-                // This is always a container, you can't create other kinds of resource outside of a deposit
-                const containerResp = await request.post(buildPath);
-            }
-            // ignore other status codes for now
-        }
-    }
-}
