@@ -1,4 +1,5 @@
 ﻿using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 
 namespace Storage;
 
@@ -66,4 +67,22 @@ public interface IStorage
     /// <param name="path"></param>
     /// <returns></returns>
     Task<Container> CreateContainer(string path);
+
+
+    // Added to make demo nicer to use but we might want to support some of this in the real version
+
+    /// <summary>
+    /// Given a source location (e.g., S3 URI), return information on the files present.
+    /// Main use is to see whether they have SHA-256 checksums at source.
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    Task<ImportSource?> GetImportSource(string? source);
+
+    /// <summary>
+    /// Create a new source location with the same files, but now with checksums applied.
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    Task<ImportSource?> CopyToNewSourceWithChecksums(string? source);
 }

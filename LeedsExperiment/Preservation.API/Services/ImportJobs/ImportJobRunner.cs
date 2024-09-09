@@ -1,10 +1,12 @@
 ﻿using System.Text.Json;
 using Fedora.Abstractions.Transfer;
-using Storage.API.Data;
-using Storage.API.Data.Entities;
-using Storage.API.Models;
+using Storage;
+using Preservation.API.Data;
+using Preservation.API.Data.Entities;
+using Preservation.API.Models;
+using Utils;
 
-namespace Storage.API.Services.ImportJobs;
+namespace Preservation.API.Services.ImportJobs;
 
 public class ImportJobRunner(
     PreservationContext dbContext,
@@ -43,9 +45,6 @@ public class ImportJobRunner(
 
             importJob.IsUpdate = await isUpdate;
             
-            // TODO - should this be set in the StorageAPI?
-            importJob.ArchivalGroupName = importJob.ArchivalGroupUri!.Slug();
-
             logger.LogInformation("Executing import job {ImportJobId}...", importJobId);
             var executedImportJob = await storageService.Import(importJob);
             

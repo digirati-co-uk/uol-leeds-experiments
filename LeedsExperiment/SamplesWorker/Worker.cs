@@ -96,7 +96,7 @@ namespace SamplesWorker
         {
             // This still seems a bit awkward to construct - paths
             var localFileInfo = new FileInfo(Path.Combine(localRootPath, pathWithinArchivalGroup.Replace('/', Path.DirectorySeparatorChar)));
-            var sha256 = Checksum.Sha256FromFile(localFileInfo);
+            var sha256 = Utils.Checksum.Sha256FromFile(localFileInfo);
             return new BinaryFile
             {
                 Parent = fedoraParent,

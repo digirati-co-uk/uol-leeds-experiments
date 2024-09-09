@@ -1,5 +1,6 @@
 ﻿using Dashboard.Helpers;
 using Fedora.Abstractions;
+using Fedora.Abstractions.Transfer;
 using Storage;
 
 namespace Dashboard.Models;
@@ -17,4 +18,6 @@ public class ImportModel
     ///  Archival Group.
     /// </summary>
     public string? Name { get; internal set; }
+
+    public ImportSource? ImportSource { get; set; }
 }

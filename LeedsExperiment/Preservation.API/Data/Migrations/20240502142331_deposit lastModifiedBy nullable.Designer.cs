@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Storage.API.Data;
+using Preservation.API.Data;
 
 #nullable disable
 
-namespace Storage.API.Data.Migrations
+namespace Preservation.API.Data.Migrations
 {
     [DbContext(typeof(PreservationContext))]
     [Migration("20240502142331_deposit lastModifiedBy nullable")]

@@ -23,11 +23,15 @@ public class AwsChecksum
         };
         var objAttrsResponse = await s3Client!.GetObjectAttributesAsync(objAttrsRequest);
         string? base64Sha256 = objAttrsResponse?.Checksum?.ChecksumSHA256;
+        return FromBase64ToHex(base64Sha256);
+    }
+
+    public static string? FromBase64ToHex(string? base64Sha256)
+    {
         if (!string.IsNullOrWhiteSpace(base64Sha256))
         {
             byte[] bytes = Convert.FromBase64String(base64Sha256);
             return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
-            
         }
         return null;
     }

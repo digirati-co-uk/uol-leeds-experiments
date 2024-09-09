@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Storage.API.Data.Migrations
+namespace Preservation.API.Data.Migrations
 {
     /// <inheritdoc />
     public partial class depositnullability : Migration

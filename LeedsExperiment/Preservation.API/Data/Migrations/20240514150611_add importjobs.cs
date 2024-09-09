@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Storage.API.Data.Migrations
+namespace Preservation.API.Data.Migrations
 {
     /// <inheritdoc />
     public partial class addimportjobs : Migration

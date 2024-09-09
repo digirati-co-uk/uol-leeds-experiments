@@ -222,7 +222,7 @@ public class FedoraWrapper : IFedora
                         throw new InvalidOperationException($"Missing digest on incoming BinaryFile FileInfo {binaryFile.Path}");
                     }
                     var fi = new FileInfo(binaryFile.ExternalLocation);
-                    expected = Checksum.Sha256FromFile(fi);
+                    expected = Utils.Checksum.Sha256FromFile(fi);
                     break;
                 case StorageTypes.S3:
                     if (isMissing && apiOptions.RequireDigestOnBinaryS3)

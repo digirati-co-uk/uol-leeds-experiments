@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Options;
+using Storage;
+using Utils;
 
-namespace Storage.API.Models;
+namespace Preservation.API.Models;
 
 public class UriGenerator
 {
@@ -37,8 +39,20 @@ public class UriGenerator
     {
         var path = $"deposits/{depositId}/importJobs/results/{importJobId}";
         return GetUriBuilderForCurrentHost(path).Uri;
-    } 
-    
+    }
+
+    public Uri GetImportJobUri(string depositId, string importJobId)
+    {
+        var path = $"deposits/{depositId}/importJobs/{importJobId}";
+        return GetUriBuilderForCurrentHost(path).Uri;
+    }
+
+    public Uri GetDiffImportJobUri(string depositId)
+    {
+        var path = $"deposits/{depositId}/importJobs/diff";
+        return GetUriBuilderForCurrentHost(path).Uri;
+    }
+
     public Uri GetDepositPath(string depositId)
     {
         var uriBuilder = GetUriBuilderForCurrentHost($"deposits/{depositId}");
@@ -75,4 +89,5 @@ public class UriGenerator
         var relativePath = ArchivalGroupUriHelpers.GetArchivalGroupPath(storageUri);
         return relativePath.StartsWith("repository") ? relativePath : $"repository/{relativePath}";
     }
+
 }

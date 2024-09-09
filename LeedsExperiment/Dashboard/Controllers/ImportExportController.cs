@@ -68,19 +68,29 @@ namespace Dashboard.Controllers
         public async Task<IActionResult> ImportStartAsync(
             [FromRoute] string path,
             [FromQuery] string? source = null,
-            [FromQuery] string? name = null) // name if creating a new one; can't rename atm
-        {            
+            [FromQuery] string? name = null,
+            [FromQuery] string? validateSource = null) // name if creating a new one; can't rename atm
+        {
             var resourceInfo = await storage.GetResourceInfo(path);
             var model = new ImportModel { Path = path, ResourceInfo = resourceInfo };
-            if(resourceInfo.Type == nameof(ArchivalGroup))
+            if (resourceInfo.Type == nameof(ArchivalGroup))
             {
                 // This is an update to an existing archival group
                 var existingAg = await storage.GetArchivalGroup(path, null);
                 model.ArchivalGroup = existingAg;
-            } 
+            }
             else if (resourceInfo.StatusCode != 404)
             {
                 ViewBag.Problem = "Invalid Status code: " + resourceInfo.StatusCode;
+                return View("ImportStart", model);
+            }
+            if (validateSource == "on")
+            {
+                model.ImportSource = await storage.GetImportSource(source);
+                if(model.ImportSource != null && model.ImportSource.Files.Any(x => string.IsNullOrWhiteSpace(x.Digest)))
+                {
+                    ViewBag.Problem = "At least one source file lacks a Digest";
+                }
                 return View("ImportStart", model);
             }
             model.Name = name;
@@ -102,7 +112,23 @@ namespace Dashboard.Controllers
             // form prevents conflicting path;
             // doesn't appear under AG
         }
-        
+
+
+
+        [HttpPost]
+        [ActionName("CopySource")]
+        [Route("copysource/{*path}")]
+        public async Task<IActionResult> CopyToNewSourceWithChecksums(
+            [FromRoute] string path,
+            [FromForm] string? source = null,
+            [FromForm] string? name = null,
+            [FromForm] string? copySource = null)
+        {
+            var newImportSource = await storage.CopyToNewSourceWithChecksums(source);
+            return await ImportStartAsync(path, newImportSource?.Source.ToString(), name, "on");
+        }
+
+
 
         [HttpPost]
         [ActionName("ImportExecute")]

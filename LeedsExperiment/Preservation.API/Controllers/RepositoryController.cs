@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Storage.API.Models;
+using Storage;
+using Preservation.API.Models;
 
-namespace Storage.API.Controllers;
+namespace Preservation.API.Controllers;
 
 [Route("[controller]/{*path}")]
 [ApiController]
@@ -21,12 +22,20 @@ public class RepositoryController(IStorage storage, ModelConverter modelConverte
     [ProducesResponseType<Container>(200, "application/json")]
     [ProducesResponseType<Binary>(200, "application/json")]
     [ProducesResponseType<DigitalObject>(200, "application/json")]
-    public async Task<IActionResult> Browse([FromRoute] string path, [FromQuery] string? version = null)
+    public async Task<IActionResult> Browse([FromRoute] string? path, [FromQuery] string? version = null)
     {
-        var unEscapedPath = Uri.UnescapeDataString(path);
-        var storageResource = string.IsNullOrEmpty(version)
-            ? await storage.GetResource(unEscapedPath)
-            : await storage.GetArchivalGroup(unEscapedPath, version);
+        Fedora.Abstractions.Resource? storageResource;
+        if(string.IsNullOrWhiteSpace(path))
+        {
+            storageResource = await storage.GetResource(null);
+        } 
+        else
+        {
+            var unEscapedPath = Uri.UnescapeDataString(path);
+            storageResource = string.IsNullOrEmpty(version)
+                ? await storage.GetResource(unEscapedPath)
+                : await storage.GetArchivalGroup(unEscapedPath, version);
+        }
 
         if (storageResource == null) return NotFound();
 

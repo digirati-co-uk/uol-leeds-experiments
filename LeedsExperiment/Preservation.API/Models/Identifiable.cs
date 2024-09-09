@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Storage.API.Models;
+namespace Preservation.API.Models;
 
 // https://github.com/tomcrane/id-minter/blob/main/IdMinter/IdMinter/Identifiable.cs
 public class Identifiable

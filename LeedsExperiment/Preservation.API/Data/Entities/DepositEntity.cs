@@ -1,4 +1,4 @@
-﻿namespace Storage.API.Data.Entities;
+﻿namespace Preservation.API.Data.Entities;
 
 /// <summary>
 /// Models a deposit in DB. "Entity" prefix used to easily differentiate this and API model (demo app, anything goes)

@@ -3,7 +3,6 @@ using Fedora.Abstractions;
 using Fedora.ApiModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Storage;
 
 namespace Storage.API.Controllers;
 
@@ -48,7 +47,7 @@ public class ImportController : Controller
         // This is either an existing Archival Group, or a 404 where the immediate parent is a Container that is not itself part of an Archival Group.
         // So now evaluate the source:
         var sourceUri = new Uri(Uri.UnescapeDataString(source));
-        var importJob = await s3ImportService.GetImportJob(archivalGroup, sourceUri, agUri, diffStart);
+        var importJob = await s3ImportService.GetImportJob(archivalGroup, sourceUri, agUri, diffStart, true);
         return importJob;
     }
 
@@ -58,6 +57,7 @@ public class ImportController : Controller
     /// Throws an exception if it's not possible to _create_ an archival group there.
     /// </summary>
     /// <param name="archivalGroupUri"></param>
+    /// <param name="transaction"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
     private async Task<ArchivalGroup?> GetValidatedArchivalGroupForImportJob(Uri archivalGroupUri, Transaction? transaction = null)

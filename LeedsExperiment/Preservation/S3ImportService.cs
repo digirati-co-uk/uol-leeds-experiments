@@ -1,9 +1,12 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Amazon.Util;
 using Fedora.Abstractions;
 using Fedora.Abstractions.Transfer;
 using Fedora.Storage;
+using Microsoft.Extensions.Options;
+using Utils;
 
 namespace Storage;
 
@@ -22,31 +25,77 @@ public interface IImportService
             ArchivalGroup? archivalGroup, 
             Uri sourceUri, 
             Uri archivalGroupUri,
-            DateTime diffStart);
+            DateTime diffStart,
+            bool errorIfMissingS3Checksum);
+
+
+    /// <summary>
+    /// Return information about an input source (e.g., S3 location), usually before you try to create an ImportJob from it
+    /// </summary>
+    /// <param name="sourceUri"></param>
+    /// <returns></returns>
+    Task<ImportSource> GetImportSource(Uri sourceUri);
+
+    /// <summary>
+    /// Copy the contents of sourceUri to a new location, this time with checksums.
+    /// </summary>
+    /// <param name="sourceUri"></param>
+    /// <returns>The Source property will be the new Uri</returns>
+    Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri);
+
+    Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup);
 }
 
 /// <summary>
 /// Service responsible for generating an <see cref="ImportJob"/> that can be understood by the storage-api using
 /// S3 location as source for change.
 /// </summary>
-public class S3ImportService(IAmazonS3 s3Client) : IImportService
+public class S3ImportService : IImportService
 {
+    private IAmazonS3 s3Client;
+
+    public S3ImportService(
+        IAmazonS3 s3Client,
+        IOptions<FedoraApiOptions> fedoraApiOptions)
+    {
+        this.s3Client = s3Client;
+    }
+
     private readonly FileExtensionContentTypeProvider contentTypeProvider = new();
 
     public async Task<ImportJob> GetImportJob(
         ArchivalGroup? archivalGroup, 
         Uri sourceUri, 
         Uri archivalGroupUri,
-        DateTime diffStart) // passing diffStart feels off, this should be able to do it here
+        DateTime diffStart, 
+        bool errorIfMissingS3Checksum
+
+        ) // passing diffStart feels off, this should be able to do it here
     {
         // TODO - how does PreservationAPI calling this know the archivalGroupUri as that's the Fedora URI?
-        var importSource = await GetImportSource(sourceUri, archivalGroupUri);
+
+        // And also, see below, this needs to know fedoraApiSettings.ApiRoot to strip the Uri to get the relative path.
+
+        // I think it should just take:
+        //
+        // ArchivalGroup? archivalGroup,
+        // Uri sourceUri, 
+        // string archivalGroupPath - e.g., my-stuff/my-ag
+
+
+        // don't pass true as third param
+        // identify METS as we traverse? Or before
+        // mets = GetMetsInfo(sourceUri) (object representing just the things we want, that could also be our JSON format)
+        // container structure with names... can these be containers and binaries too?
+        // get mets s3 key so we can forgive its lack of S3
+        // pass in metsInfo and use 
+        var importSource = await GetImportSource(sourceUri, archivalGroupUri, errorIfMissingS3Checksum);
         
         var importJob = new ImportJob
         {
             ArchivalGroupUri = archivalGroupUri,
             StorageType = StorageTypes.S3, // all we support for now
-            ArchivalGroupPath = archivalGroupUri.AbsolutePath, // is this safe?
+            ArchivalGroupPath = Utils.ArchivalGroupUriHelpers.GetArchivalGroupPath(archivalGroupUri), 
             Source = sourceUri.ToString(),
             DiffStart = diffStart
         };
@@ -69,9 +118,59 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
         return importJob;
     }
 
+    public async Task<ImportSource> GetImportSource(Uri source)
+    {
+        // yuk - didn't want to make BinaryFile.Parent nullable so am passing this dummy for now
+        // But maybe it should be nullable - it can represent a file in S3 that doesn't yet know
+        // where it's going.
+        //                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        var importSource = await GetImportSource(source, new Uri("https://example.org/parent"), false);
+        return importSource;
+    }
+
+    public async Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri)
+    {
+        var existingSource = await GetImportSource(sourceUri);
+        // we're just going to create a copy of the source alongside the old one, and not worry about unlikely collisions
+        var existingStr = sourceUri.ToString();
+        const string suffix = "-CHK";
+        string? newStr;
+        if (existingStr[^1] == '/')
+        {
+            newStr = $"{existingStr.Remove(existingStr.Length - 1)}{suffix}/";
+        }
+        else
+        {
+            newStr = $"{existingStr}{suffix}";
+        }
+
+        foreach (var file in existingSource.Files)
+        {
+            var existingFileUri = new AmazonS3Uri(file.ExternalLocation);
+            var newFileUri = new AmazonS3Uri(file.ExternalLocation.Replace(existingStr, newStr));
+            if(existingFileUri.Bucket != newFileUri.Bucket)
+            {
+                throw new Exception("Unexpected bucket mismatch");
+            }
+            var req = new CopyObjectRequest
+            {
+                SourceBucket = existingFileUri.Bucket,
+                SourceKey = existingFileUri.Key,
+                DestinationBucket = newFileUri.Bucket,
+                DestinationKey = newFileUri.Key,
+                ChecksumAlgorithm = ChecksumAlgorithm.SHA256
+            };
+            await s3Client.CopyObjectAsync(req);
+        }
+
+        var newSource = await GetImportSource(new Uri(newStr));
+        return newSource;
+    }
+
+
     // Generate an ImportSource for S3 - if we want to support alternative means of diff-generation (e.g. METS)
     // then would it just be a case of having alternative implementations of this?
-    private async Task<ImportSource> GetImportSource(Uri source, Uri intendedParent)
+    private async Task<ImportSource> GetImportSource(Uri source, Uri? intendedParent, bool errorIfMissingChecksum)
     {
         // NOTE - this is refactored from Storage ImportController to common class for use by Preservation
         
@@ -101,7 +200,7 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             // application/x-directory
         };
 
-        var importSource = new ImportSource();
+        var importSource = new ImportSource { Source = source };
         var response = await s3Client.ListObjectsV2Async(listObjectsReq);
         var containerPaths = new HashSet<string>();
         foreach (S3Object obj in response.S3Objects)
@@ -126,7 +225,7 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             // Get the SHA256 algorithm from AWS directly rather than compute it here
             // If the S3 file does not already have the SHA-256 in metadata, then it's an error
             string? sha256 = await AwsChecksum.GetHexChecksumAsync(s3Client, s3Uri.Bucket, obj.Key);
-            if (string.IsNullOrWhiteSpace(sha256))
+            if (string.IsNullOrWhiteSpace(sha256) && errorIfMissingChecksum)
             {
                 throw new InvalidOperationException($"S3 Key at {obj.Key} does not have SHA256 Checksum in its attributes");
             }
@@ -176,6 +275,8 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
     {
         // What's the best way to diff?
         // This is very crude and can't spot a container being renamed
+
+        // see https://universityofleeds.visualstudio.com/Library/_backlogs/backlog/DLIP/Epics?workitem=77035
 
         var allExistingContainers = new List<ContainerDirectory>();
         var allExistingFiles = new List<BinaryFile>();
@@ -253,5 +354,67 @@ public class S3ImportService(IAmazonS3 s3Client) : IImportService
             contentType = defaultContentType;
         }
         return contentType!;
+    }
+
+    public async Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup)
+    {
+        var metsParser = new MetsParser.Parser(s3Client);
+        var metsFile = await metsParser.ResolveAndParseAsync(new Uri(importJob.Source));
+        if(metsFile.Self == null)
+        {
+            // no mets file was found
+            // log this? treat as error?
+            return;
+        }
+
+        // (the existing Archival Group is fully populated - all files and folders, recurse=true)
+
+
+        // we might need to 
+        // take checksums from the mets file and add them to the import job
+        // validate the import job against the mets file - do they agree? Are the files where they say they are?
+        // update the `name` properties of files in the import job
+        // we might also need to add new tasks to the import job for containers and files that just have `name` changes (TODO - not in prototype)
+
+        // First pass, just embellish the import job from METS without looking at the existingArchivalGroup
+
+        var filesToCompare = new List<BinaryFile>();
+        filesToCompare.AddRange(importJob.FilesToAdd);
+        filesToCompare.AddRange(importJob.FilesToPatch);
+        foreach (var bf in filesToCompare)
+        {
+            var fileInMets = metsFile.Files.SingleOrDefault(f => f.Path == bf.Path);
+            if(fileInMets != null)
+            {
+                if (fileInMets.Digest.HasText())
+                {
+                    bf.Digest = fileInMets.Digest;
+                }
+                if (fileInMets.Name.HasText())
+                {
+                    bf.Name = fileInMets.Name;
+                }
+            }
+        }
+
+        var containersToCompare = new List<ContainerDirectory>();
+        containersToCompare.AddRange(importJob.ContainersToAdd);
+        // we have no importJob.ContainersToPatch yet
+        foreach(var cd in containersToCompare)
+        {
+            var containerInMets = metsFile.Directories.SingleOrDefault(d => d.Path == cd.Path);
+            if(containerInMets != null)
+            {
+                if (containerInMets.Name.HasText())
+                {
+                    cd.Name = containerInMets.Name;
+                }
+            }
+        }
+
+        if(metsFile.Name.HasText())
+        {
+            importJob.ArchivalGroupName = metsFile.Name;
+        }
     }
 }
