@@ -13,7 +13,7 @@ test.describe('Create a deposit and put some files in it', () => {
 
     let newDeposit = null;
 
-    test('create-deposit', async ({request}) => {
+    test('create-deposit', async ({request, baseURL}) => {
 
         // Set a very long timeout so you can debug on breakpoints or whatnot.
         test.setTimeout(1000000);
@@ -91,7 +91,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // To allow the same object to be created multiple times without having to
         // clear out the repository, I'm going to append a timestamp to this URI.
         // WE WOULD NOT DO THAT IN A REAL SCENARIO!
-        let preservedDigitalObjectUri = "https://localhost:7169/repository/testing/digitised/MS-10315" + getShortTimestamp();
+        let preservedDigitalObjectUri = baseURL + "/repository/testing/digitised/MS-10315" + getShortTimestamp();
 
         // ### API INTERACTION ###
         const depositWithDestination = await request.patch(newDeposit["@id"], {
