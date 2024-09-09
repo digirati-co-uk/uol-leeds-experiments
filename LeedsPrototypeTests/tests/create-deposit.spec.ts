@@ -29,12 +29,16 @@ test.describe('Create a deposit and put some files in it', () => {
         // So we ask for one:
 
         // ### API INTERACTION ###
+        console.log("Create a new Deposit:");
+        console.log("POST /deposits");
         const depositReq = await request.post('/deposits');
 
         expect(depositReq.status()).toBe(201);
         newDeposit = await depositReq.json();
         // https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#deposit
+        console.log("New Deposit created:");
         console.log(newDeposit);
+        console.log("----");
 
         // this deposit could be used for creating a new DigitalObject in
         // the repository, or for updating an existing one.
@@ -75,9 +79,12 @@ test.describe('Create a deposit and put some files in it', () => {
             'objects/372705s_004.jpg'
         ];
         const s3Client = getS3Client();
+        console.log("Uploading " + files.length + " files to the S3 location provided by the Deposit:");
+        console.log(newDeposit.files);
         for (const file of files) {
             await uploadFile(s3Client, newDeposit.files, sourceDir + file, file)
         }
+        console.log("----");
 
         // Now we have uploaded our files. The next step is to create in ImportJob
         // https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#importjob
@@ -94,12 +101,16 @@ test.describe('Create a deposit and put some files in it', () => {
         let preservedDigitalObjectUri = baseURL + "/repository/testing/digitised/MS-10315" + getShortTimestamp();
 
         // ### API INTERACTION ###
+        console.log("Adding our intended DigitalObject (package, preserved digital object) URI to the deposit with a PATCH");
+        console.log("The URI of the preserved digital object will be:")
+        console.log(preservedDigitalObjectUri);
         const depositWithDestination = await request.patch(newDeposit["@id"], {
             data: {
                 digitalObject: preservedDigitalObjectUri,
                 submissionText: "You can write what you like here"
             }
         });
+        console.log("----");
 
 
         expect(await depositWithDestination.json()).toEqual(expect.objectContaining({
@@ -115,10 +126,13 @@ test.describe('Create a deposit and put some files in it', () => {
 
 
         // ### API INTERACTION ###
+        console.log("Asking service to generate an import job from the deposit files (a diff)...");
+        console.log("GET " + diffJobGeneratorUri);
         const diffReq = await request.get(diffJobGeneratorUri);
 
         const diffImportJob = await diffReq.json();
         console.log(diffImportJob);
+        console.log("----");
 
         // You could edit diffImportJob here, e.g., to remove some files, change names.
         // Notice that the server has used information in the METS as well as the S3 layout.
@@ -130,7 +144,10 @@ test.describe('Create a deposit and put some files in it', () => {
         // We will just execute the job as-is, by POSTing it:
 
         // ### API INTERACTION ###
-        const executeImportJobReq = await request.post(newDeposit['@id'] + '/importJobs', {
+        const executeJobUri = newDeposit['@id'] + '/importJobs';
+        console.log("Now execute the import job...");
+        console.log("POST " + executeJobUri);
+        const executeImportJobReq = await request.post(executeJobUri, {
             data: diffImportJob
         });
 
@@ -142,6 +159,7 @@ test.describe('Create a deposit and put some files in it', () => {
             status: 'waiting',
             digitalObject: preservedDigitalObjectUri
         }));
+        console.log("----");
         // There is a way of executing a diff import job in one step, without having to see the body
         // - see https://github.com/uol-dlip/docs/blob/main/rfcs/003-preservation-api.md#execute-import-job
         // but the above allows us to see what we are about to ask for.
@@ -150,9 +168,12 @@ test.describe('Create a deposit and put some files in it', () => {
         // We could now go away and do something else, as this job might in a long queue.
         // For this test we'll just wait for it to complete - which means that the status is
         // either "completed" or "completedWithErrors",
+
+        console.log("... and poll it until it is either complete or completeWithErrors...");
         await expect.poll(async () => {
 
             // ### API INTERACTION ###
+            console.log("GET " + importJobResult['@id']);
             const ijrReq = await request.get(importJobResult['@id']);
 
             const ijr = await ijrReq.json();
@@ -162,10 +183,13 @@ test.describe('Create a deposit and put some files in it', () => {
             intervals: [2000], // every 2 seconds
             timeout: 60000 // allow 1 minute to complete
         }).toMatch(/completed.*/);
+        console.log("----");
 
         // Now we should have a preserved digital object in the repository:
 
         // ### API INTERACTION ###
+        console.log("Now request the digital object URI we made earlier:");
+        console.log("GET " + preservedDigitalObjectUri);
         const digitalObjectReq = await request.get(preservedDigitalObjectUri);
 
         expect(digitalObjectReq.ok()).toBeTruthy();

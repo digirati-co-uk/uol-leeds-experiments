@@ -39,6 +39,7 @@ export async function uploadFile(
         // But if you DO provide this information in S3 metadata, we will validate it against the METS file.
     });
 
+    console.log("Uploading to S3: " + pathInDeposit);
     await s3.send(putCmd);
 }
 
