@@ -266,7 +266,7 @@ public class PreservationImportJob : PreservationResource
     /// The Deposit that was used to generate this job, and to which it will be sent if executed.
     /// </summary>
     [JsonPropertyOrder(10)]
-    public Uri Deposit { get; set; }
+    public Uri? Deposit { get; set; }
     
     /// <summary>
     /// The object in the repository that the job is to be performed on. This object doesn't necessarily exist yet -
@@ -274,14 +274,14 @@ public class PreservationImportJob : PreservationResource
     /// redundant, but must be included so that the intent is explicit and self-contained.
     /// </summary>
     [JsonPropertyOrder(11)]
-    public Uri DigitalObject { get; set; }
+    public Uri? DigitalObject { get; set; }
 
 
     /// <summary>
     /// For a new digitalObject, the dc:title (name) to give the object in the repository.
     /// </summary>
     [JsonPropertyOrder(11)]
-    public string DigitalObjectName { get; set; }
+    public string? DigitalObjectName { get; set; }
 
     /// <summary>
     /// Always provided when you ask the API to generate an ImportJob as a diff and the DigitalObject already exists.
@@ -297,7 +297,7 @@ public class PreservationImportJob : PreservationResource
     /// original directory name.
     /// </summary>
     [JsonPropertyOrder(13)]
-    public Container[] ContainersToAdd { get; set; }
+    public Container[]? ContainersToAdd { get; set; }
     
     /// <summary>
     /// A list of Binary objects to be created within the Digital object from keys in S3. The @id property gives the URI
@@ -309,20 +309,20 @@ public class PreservationImportJob : PreservationResource
     /// S3 location last path element are all different - this is permitted, although perhaps unusual.
     /// </summary>
     [JsonPropertyOrder(14)]
-    public Binary[] BinariesToAdd { get; set; }
+    public Binary[]? BinariesToAdd { get; set; }
     
     /// <summary>
     /// A list of containers to remove. @id is the only required property. The Containers must either be already empty,
     /// or only contain Binaries mentioned in the binariesToDelete property of the same ImportJob.
     /// </summary>
     [JsonPropertyOrder(15)]
-    public Container[] ContainersToDelete { get; set; }
+    public Container[]? ContainersToDelete { get; set; }
     
     /// <summary>
     /// A list of binaries to remove. @id is the only required property.
     /// </summary>
     [JsonPropertyOrder(16)]
-    public Binary[] BinariesToDelete { get; set; }
+    public Binary[]? BinariesToDelete { get; set; }
     
     /// <summary>
     /// A list of Binary objects to be updated within the Digital object from keys in S3. The @id property gives the URI
@@ -332,7 +332,7 @@ public class PreservationImportJob : PreservationResource
     /// cannot be obtained by the API from METS file information or from S3 metadata.
     /// </summary>
     [JsonPropertyOrder(17)]
-    public Binary[] BinariesToPatch { get; set; }
+    public Binary[]? BinariesToPatch { get; set; }
 }
 
 public class ImportJobResult : PreservationResource

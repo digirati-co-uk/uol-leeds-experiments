@@ -1,4 +1,4 @@
-import { expect, test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {getS3Client, uploadFile, getShortTimestamp, ensurePath} from './common-utils'
 
 // Scenario:

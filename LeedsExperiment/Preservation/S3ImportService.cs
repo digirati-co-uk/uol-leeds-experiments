@@ -26,7 +26,8 @@ public interface IImportService
             Uri sourceUri, 
             Uri archivalGroupUri,
             DateTime diffStart,
-            bool errorIfMissingS3Checksum);
+            bool errorIfMissingS3Checksum,
+            bool embellishFromMets);
 
 
     /// <summary>
@@ -43,7 +44,7 @@ public interface IImportService
     /// <returns>The Source property will be the new Uri</returns>
     Task<ImportSource> CopyToNewSourceWithChecksums(Uri sourceUri);
 
-    Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup);
+    // Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup);
 }
 
 /// <summary>
@@ -68,8 +69,8 @@ public class S3ImportService : IImportService
         Uri sourceUri, 
         Uri archivalGroupUri,
         DateTime diffStart, 
-        bool errorIfMissingS3Checksum
-
+        bool errorIfMissingS3Checksum,
+        bool embellishFromMets
         ) // passing diffStart feels off, this should be able to do it here
     {
         // TODO - how does PreservationAPI calling this know the archivalGroupUri as that's the Fedora URI?
@@ -89,7 +90,7 @@ public class S3ImportService : IImportService
         // container structure with names... can these be containers and binaries too?
         // get mets s3 key so we can forgive its lack of S3
         // pass in metsInfo and use 
-        var importSource = await GetImportSource(sourceUri, archivalGroupUri, errorIfMissingS3Checksum);
+        var importSource = await GetImportSource(sourceUri, archivalGroupUri, errorIfMissingS3Checksum, embellishFromMets);
         
         var importJob = new ImportJob
         {
@@ -99,6 +100,11 @@ public class S3ImportService : IImportService
             Source = sourceUri.ToString(),
             DiffStart = diffStart
         };
+
+        if (importSource.Name.HasText())
+        {
+            importJob.ArchivalGroupName = importSource.Name;
+        }
         
         if (archivalGroup == null)
         {
@@ -124,7 +130,7 @@ public class S3ImportService : IImportService
         // But maybe it should be nullable - it can represent a file in S3 that doesn't yet know
         // where it's going.
         //                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        var importSource = await GetImportSource(source, new Uri("https://example.org/parent"), false);
+        var importSource = await GetImportSource(source, new Uri("https://example.org/parent"), false, false);
         return importSource;
     }
 
@@ -170,7 +176,7 @@ public class S3ImportService : IImportService
 
     // Generate an ImportSource for S3 - if we want to support alternative means of diff-generation (e.g. METS)
     // then would it just be a case of having alternative implementations of this?
-    private async Task<ImportSource> GetImportSource(Uri source, Uri? intendedParent, bool errorIfMissingChecksum)
+    private async Task<ImportSource> GetImportSource(Uri source, Uri? intendedParent, bool errorIfMissingChecksum, bool embellishFromMets)
     {
         // NOTE - this is refactored from Storage ImportController to common class for use by Preservation
         
@@ -268,6 +274,11 @@ public class S3ImportService : IImportService
             });
         }
 
+        if(embellishFromMets)
+        {
+            await EmbellishFromMets(importSource);
+        }
+
         return importSource;
     }
     
@@ -356,10 +367,10 @@ public class S3ImportService : IImportService
         return contentType!;
     }
 
-    public async Task EmbellishFromMets(ImportJob importJob, ArchivalGroup? existingArchivalGroup)
+    public async Task EmbellishFromMets(ImportSource importSource)
     {
         var metsParser = new MetsParser.Parser(s3Client);
-        var metsFile = await metsParser.ResolveAndParseAsync(new Uri(importJob.Source));
+        var metsFile = await metsParser.ResolveAndParseAsync(importSource.Source);
         if(metsFile.Self == null)
         {
             // no mets file was found
@@ -378,10 +389,7 @@ public class S3ImportService : IImportService
 
         // First pass, just embellish the import job from METS without looking at the existingArchivalGroup
 
-        var filesToCompare = new List<BinaryFile>();
-        filesToCompare.AddRange(importJob.FilesToAdd);
-        filesToCompare.AddRange(importJob.FilesToPatch);
-        foreach (var bf in filesToCompare)
+        foreach (var bf in importSource.Files)
         {
             var fileInMets = metsFile.Files.SingleOrDefault(f => f.Path == bf.Path);
             if(fileInMets != null)
@@ -397,10 +405,7 @@ public class S3ImportService : IImportService
             }
         }
 
-        var containersToCompare = new List<ContainerDirectory>();
-        containersToCompare.AddRange(importJob.ContainersToAdd);
-        // we have no importJob.ContainersToPatch yet
-        foreach(var cd in containersToCompare)
+        foreach(var cd in importSource.Containers)
         {
             var containerInMets = metsFile.Directories.SingleOrDefault(d => d.Path == cd.Path);
             if(containerInMets != null)
@@ -414,7 +419,7 @@ public class S3ImportService : IImportService
 
         if(metsFile.Name.HasText())
         {
-            importJob.ArchivalGroupName = metsFile.Name;
+            importSource.Name = metsFile.Name;
         }
     }
 }

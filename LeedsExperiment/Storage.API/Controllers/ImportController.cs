@@ -47,7 +47,7 @@ public class ImportController : Controller
         // This is either an existing Archival Group, or a 404 where the immediate parent is a Container that is not itself part of an Archival Group.
         // So now evaluate the source:
         var sourceUri = new Uri(Uri.UnescapeDataString(source));
-        var importJob = await s3ImportService.GetImportJob(archivalGroup, sourceUri, agUri, diffStart, true);
+        var importJob = await s3ImportService.GetImportJob(archivalGroup, sourceUri, agUri, diffStart, true, false);
         return importJob;
     }
 

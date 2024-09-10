@@ -1,5 +1,5 @@
 import {APIRequestContext} from '@playwright/test';
-import {PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
+import {ListObjectsV2Command, paginateListObjectsV2, PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {fromIni} from '@aws-sdk/credential-providers';
 import {parseS3Url} from 'amazon-s3-url'
 import {readFileSync} from "fs";
@@ -33,7 +33,8 @@ export async function uploadFile(
     const putCmd = new PutObjectCommand({
         Bucket: s3Url.bucket,
         Key: pathInDeposit,
-        Body: readFileSync(localFilePath)
+        Body: readFileSync(localFilePath),
+        CacheControl: "no-cache"
         // Note that we don't need to set this if the METS file provides it:
         // ChecksumAlgorithm: "SHA256"
         // But if you DO provide this information in S3 metadata, we will validate it against the METS file.
@@ -41,6 +42,24 @@ export async function uploadFile(
 
     console.log("Uploading to S3: " + pathInDeposit);
     await s3.send(putCmd);
+}
+
+export async function listKeys(s3: S3Client, parentKey: string){
+
+    const s3Url = parseS3Url(parentKey);
+    var opts = {
+        Bucket: s3Url.bucket,
+        Prefix: parentKey
+    }
+
+    const files = [];
+    for await (const data of paginateListObjectsV2({ client: s3 }, opts)) {
+        files.push(...(data.Contents ?? []));
+    }
+    for(const f of files){
+        console.log(f);
+    }
+    return files;
 }
 
 // This is purely for demo purposes and would be no part of a real application!!

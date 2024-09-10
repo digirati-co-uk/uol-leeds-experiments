@@ -7,6 +7,9 @@ public class ImportSource
 {
     public Uri Source { get; set; }
 
+    // If the source itself can supply a name: typically mods:title from a METS file
+    public string? Name { get; set; }
+
     [JsonPropertyName("containers")]
     [JsonPropertyOrder(1)]
     public List<ContainerDirectory> Containers { get; set; } = [];
