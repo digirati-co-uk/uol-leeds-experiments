@@ -32,6 +32,7 @@ test.describe('Export an existing Digital Object and make changes to it, then cr
         expect(exportDeposit.files).toMatch(/s3:\/\/.*/);
         console.log("The files for " + digitalObjectUri + " have been placed under " + exportDeposit.files);
 
+
         const s3Client = getS3Client();
         await listKeys(s3Client, exportDeposit.files);
 

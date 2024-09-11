@@ -30,10 +30,7 @@ export async function createDigitalObject(request: APIRequestContext, baseURL: s
     console.log("Execute the diff in one operation, without fetching it first (see RFC)")
     // This is a shortcut, a variation on the mechanism shown in create-deposit.spec.ts
     const executeImportJobReq = await request.post(newDeposit['@id'] + '/importJobs', {
-        data: {
-            "@id": newDeposit['@id'] + '/importJobs/diff',
-            type: 'ImportJob'
-        }
+        data: { "@id": newDeposit['@id'] + '/importJobs/diff' }
     });
     let importJobResult = await executeImportJobReq.json();
     await expect.poll(async () => {

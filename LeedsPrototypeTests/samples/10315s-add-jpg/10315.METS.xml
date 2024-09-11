@@ -150,7 +150,7 @@
             <premis:objectCharacteristics>
               <premis:fixity>
                 <premis:messageDigestAlgorithm>sha256</premis:messageDigestAlgorithm>
-                <premis:messageDigest>e00021d2337436e4cd338ab3ae77adb2f5def2a30cd303f35ad419568f9b9e63</premis:messageDigest>
+                <premis:messageDigest>5d235e69c795ec73fd45ed5eb9f75be7f0075abccd4ee0b622bfc3c898379710</premis:messageDigest>
               </premis:fixity>
               <premis:size>135782</premis:size>
               <premis:format>
