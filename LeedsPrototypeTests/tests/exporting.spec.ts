@@ -30,8 +30,18 @@ test.describe('Export an existing Digital Object and make changes to it, then cr
         });
         const exportDeposit = await exportResp.json();
         expect(exportDeposit.files).toMatch(/s3:\/\/.*/);
-        console.log("The files for " + digitalObjectUri + " have been placed under " + exportDeposit.files);
-
+        console.log("The files for " + digitalObjectUri + " will be placed under " + exportDeposit.files);
+        console.log("But we need to wait for the export to finish! It might take a long time");
+        await expect.poll(async () => {
+            console.log("GET the export deposit: " + exportDeposit['@id']);
+            const exDepReq = await request.get(exportDeposit['@id']);
+            const exDep = await exDepReq.json();
+            console.log("status: " + exDep.status);
+            return exDep.status;
+        }, {
+            intervals: [2000], // every 2 seconds
+            timeout: 60000 // allow 1 minute to complete
+        }).toMatch("ready");
 
         const s3Client = getS3Client();
         await listKeys(s3Client, exportDeposit.files);
