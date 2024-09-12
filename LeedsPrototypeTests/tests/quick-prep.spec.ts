@@ -1,11 +1,11 @@
 // This does the same thing as the create-deposit example, but without the extra comments
 
 import {APIRequestContext, expect} from "@playwright/test";
-import {ensurePath, getS3Client, uploadFile} from "./common-utils";
+import {ensurePath, getS3Client, getYMD, uploadFile, waitForStatus} from "./common-utils";
 
 export async function createDigitalObject(request: APIRequestContext, baseURL: string){
 
-    const digitalPreservationParent = `/testing/update-examples/${new Date().toISOString()}`;
+    const digitalPreservationParent = `/goobi-demo-updates/${new Date().toISOString()}`;
     await ensurePath(digitalPreservationParent, request)
     const preservedDigitalObjectUri = `${baseURL}/repository${digitalPreservationParent}/MS-10315`;
     const newDepositResp = await request.post('/deposits', {
@@ -33,13 +33,6 @@ export async function createDigitalObject(request: APIRequestContext, baseURL: s
         data: { "@id": newDeposit['@id'] + '/importJobs/diff' }
     });
     let importJobResult = await executeImportJobReq.json();
-    await expect.poll(async () => {
-        const ijrReq = await request.get(importJobResult['@id']);
-        const ijr = await ijrReq.json();
-        return ijr.status;
-    }, {
-        intervals: [2000], // every 2 seconds
-        timeout: 60000 // allow 1 minute to complete
-    }).toMatch(/completed.*/);
+    await waitForStatus(importJobResult['@id'], /completed.*/, request);
     return preservedDigitalObjectUri;
 }

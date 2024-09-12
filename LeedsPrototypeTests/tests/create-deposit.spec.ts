@@ -1,5 +1,13 @@
 import {expect, test} from '@playwright/test';
-import {getS3Client, uploadFile, getShortTimestamp, ensurePath} from './common-utils'
+import {
+    getS3Client,
+    uploadFile,
+    getShortTimestamp,
+    ensurePath,
+    waitForStatus,
+    getYMD,
+    getSecondOfDay
+} from './common-utils'
 
 // Scenario:
 // A completely new digital object / package / book / etc.
@@ -23,7 +31,8 @@ test.describe('Create a deposit and put some files in it', () => {
         // parent location - but that location needs to exist! Goobi isn't the only user of the repository.
         // And also, Goobi can create child structure.
         // This will be a no-op except the very first time, commenting out for now
-        // await ensurePath("/testing/digitised", request);
+        const parentContainer = `/goobi-demo-basic/${getYMD()}`;
+        await ensurePath(parentContainer, request);
 
         // We want to have a new WORKING SPACE - a _Deposit_
         // So we ask for one:
@@ -98,7 +107,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // To allow the same object to be created multiple times without having to
         // clear out the repository, I'm going to append a timestamp to this URI.
         // WE WOULD NOT DO THAT IN A REAL SCENARIO!
-        let preservedDigitalObjectUri = baseURL + "/repository/testing/digitised/MS-10315" + getShortTimestamp();
+        let preservedDigitalObjectUri = `${baseURL}/repository${parentContainer}/MS-10315-${getSecondOfDay()}`;
 
         // ### API INTERACTION ###
         console.log("Adding our intended DigitalObject (package, preserved digital object) URI to the deposit with a PATCH");
@@ -170,19 +179,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // either "completed" or "completedWithErrors",
 
         console.log("... and poll it until it is either complete or completeWithErrors...");
-        await expect.poll(async () => {
-
-            // ### API INTERACTION ###
-            console.log("GET " + importJobResult['@id']);
-            const ijrReq = await request.get(importJobResult['@id']);
-
-            const ijr = await ijrReq.json();
-            console.log("status: " + ijr.status);
-            return ijr.status;
-        }, {
-            intervals: [2000], // every 2 seconds
-            timeout: 60000 // allow 1 minute to complete
-        }).toMatch(/completed.*/);
+        await waitForStatus(importJobResult['@id'], /completed.*/, request);
         console.log("----");
 
         // Now we should have a preserved digital object in the repository:

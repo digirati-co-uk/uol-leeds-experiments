@@ -1,4 +1,4 @@
-import {APIRequestContext} from '@playwright/test';
+import {APIRequestContext, expect} from '@playwright/test';
 import {ListObjectsV2Command, paginateListObjectsV2, PutObjectCommand, S3Client} from "@aws-sdk/client-s3";
 import {fromIni} from '@aws-sdk/credential-providers';
 import {parseS3Url} from 'amazon-s3-url'
@@ -71,6 +71,17 @@ export function getShortTimestamp(){
     return `-${String(dayOfYear).padStart(3, '0')}-${String(secondOfDay).padStart(5, '0')}`
 }
 
+export function getSecondOfDay(){
+    const date = new Date();
+    const secondOfDay = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+    return String(secondOfDay).padStart(5, '0');
+}
+
+export function getYMD(){
+    const date = new Date();
+    return date.toISOString().split('T')[0]
+}
+
 export async function ensurePath(path: string, request: APIRequestContext) {
     const parts = path.split('/');
     let buildPath = "/repository";
@@ -85,4 +96,17 @@ export async function ensurePath(path: string, request: APIRequestContext) {
             // ignore other status codes for now
         }
     }
+}
+
+export async function waitForStatus(uri: string, status: any, request: APIRequestContext){
+      await expect.poll(async () => {
+        console.log(`polling object: ${uri}`);
+        const resp = await request.get(uri);
+        const respObj = await resp.json();
+        console.log("status: " + respObj.status);
+        return respObj.status;
+    }, {
+        intervals: [2000], // every 2 seconds
+        timeout: 60000 // allow 1 minute to complete
+    }).toMatch(status);
 }

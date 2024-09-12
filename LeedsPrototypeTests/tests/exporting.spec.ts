@@ -1,6 +1,6 @@
 import {expect, test} from '@playwright/test';
 import { createDigitalObject } from './quick-prep.spec'
-import {getS3Client, listKeys, uploadFile} from "./common-utils";
+import {getS3Client, listKeys, uploadFile, waitForStatus} from "./common-utils";
 import {ListObjectsV2Command} from "@aws-sdk/client-s3";
 
 // Create a new deposit by exporting a version
@@ -9,7 +9,7 @@ import {ListObjectsV2Command} from "@aws-sdk/client-s3";
 test.describe('Export an existing Digital Object and make changes to it, then create a new version in Digital Preservation', () => {
 
 
-    test('exporting-and-adding-a-file', async ({request, baseURL}) => {
+    test('exporting-to-edit-mets', async ({request, baseURL}) => {
 
         // Set a very long timeout so you can debug on breakpoints or whatnot.
         test.setTimeout(1000000);
@@ -32,16 +32,7 @@ test.describe('Export an existing Digital Object and make changes to it, then cr
         expect(exportDeposit.files).toMatch(/s3:\/\/.*/);
         console.log("The files for " + digitalObjectUri + " will be placed under " + exportDeposit.files);
         console.log("But we need to wait for the export to finish! It might take a long time");
-        await expect.poll(async () => {
-            console.log("GET the export deposit: " + exportDeposit['@id']);
-            const exDepReq = await request.get(exportDeposit['@id']);
-            const exDep = await exDepReq.json();
-            console.log("status: " + exDep.status);
-            return exDep.status;
-        }, {
-            intervals: [2000], // every 2 seconds
-            timeout: 60000 // allow 1 minute to complete
-        }).toMatch("ready");
+        await waitForStatus(exportDeposit['@id'], "ready", request);
 
         const s3Client = getS3Client();
         await listKeys(s3Client, exportDeposit.files);
@@ -102,19 +93,7 @@ test.describe('Export an existing Digital Object and make changes to it, then cr
         console.log("----");
 
         console.log("... and poll it until it is either complete or completeWithErrors...");
-        await expect.poll(async () => {
-
-            // ### API INTERACTION ###
-            console.log("GET " + importJobResult['@id']);
-            const ijrReq = await request.get(importJobResult['@id']);
-
-            const ijr = await ijrReq.json();
-            console.log("status: " + ijr.status);
-            return ijr.status;
-        }, {
-            intervals: [2000], // every 2 seconds
-            timeout: 60000 // allow 1 minute to complete
-        }).toMatch(/completed.*/);
+        await waitForStatus(importJobResult['@id'], /completed.*/, request);
         console.log("----");
 
         // Now we should have an UPDATED digital object in the repository:
