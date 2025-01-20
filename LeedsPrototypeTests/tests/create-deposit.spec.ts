@@ -31,7 +31,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // parent location - but that location needs to exist! Goobi isn't the only user of the repository.
         // And also, Goobi can create child structure.
         // This will be a no-op except the very first time, commenting out for now
-        const parentContainer = `/goobi-demo-basic/${getYMD()}`;
+        const parentContainer = `/goobi-demo-basic-1/${getYMD()}`;
         await ensurePath(parentContainer, request);
 
         // We want to have a new WORKING SPACE - a _Deposit_

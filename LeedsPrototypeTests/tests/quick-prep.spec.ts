@@ -5,7 +5,7 @@ import {ensurePath, getS3Client, getYMD, uploadFile, waitForStatus} from "./comm
 
 export async function createDigitalObject(request: APIRequestContext, baseURL: string){
 
-    const digitalPreservationParent = `/goobi-demo-updates/${new Date().toISOString()}`;
+    const digitalPreservationParent = `/goobi-demo-updates-1/${new Date().toISOString()}`;
     await ensurePath(digitalPreservationParent, request)
     const preservedDigitalObjectUri = `${baseURL}/repository${digitalPreservationParent}/MS-10315`;
     const newDepositResp = await request.post('/deposits', {

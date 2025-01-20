@@ -25,7 +25,7 @@ test.describe('Export an existing Digital Object and make changes to it, then cr
         console.log("We could ask for a specific version, but we'll omit the version property to get the most recent (which should be v1 here)")
         const exportResp = await request.post('/deposits/export', {
             data: {
-                digitalObject: digitalObjectUri
+                digitalObject: digitalObjectUri // This object is actually a deposit; see new version
             }
         });
         const exportDeposit = await exportResp.json();
