@@ -2,7 +2,6 @@ import {expect, test} from '@playwright/test';
 import {
     getS3Client,
     uploadFile,
-    getShortTimestamp,
     ensurePath,
     waitForStatus,
     getYMD,
@@ -31,7 +30,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // parent location - but that location needs to exist! Goobi isn't the only user of the repository.
         // And also, Goobi can create child structure.
         // This will be a no-op except the very first time, commenting out for now
-        const parentContainer = `/goobi-demo-basic-1/${getYMD()}`;
+        const parentContainer = `/goobi-tests/basic-1/${getYMD()}`;
         await ensurePath(parentContainer, request);
 
         // We want to have a new WORKING SPACE - a _Deposit_
@@ -40,7 +39,9 @@ test.describe('Create a deposit and put some files in it', () => {
         // ### API INTERACTION ###
         console.log("Create a new Deposit:");
         console.log("POST /deposits");
-        const depositReq = await request.post('/deposits');
+        const depositReq = await request.post('/deposits', {
+            data: {}
+        }); // expect fail need data {}
 
         expect(depositReq.status()).toBe(201);
         newDeposit = await depositReq.json();
@@ -107,15 +108,15 @@ test.describe('Create a deposit and put some files in it', () => {
         // To allow the same object to be created multiple times without having to
         // clear out the repository, I'm going to append a timestamp to this URI.
         // WE WOULD NOT DO THAT IN A REAL SCENARIO!
-        let preservedDigitalObjectUri = `${baseURL}/repository${parentContainer}/MS-10315-${getSecondOfDay()}`;
+        let preservedDigitalObjectUri = `${baseURL}/repository${parentContainer}/ms-10315-${getSecondOfDay()}`;
 
         // ### API INTERACTION ###
         console.log("Adding our intended DigitalObject (package, preserved digital object) URI to the deposit with a PATCH");
         console.log("The URI of the preserved digital object will be:")
         console.log(preservedDigitalObjectUri);
-        const depositWithDestination = await request.patch(newDeposit["@id"], {
+        const depositWithDestination = await request.patch(newDeposit.id, {
             data: {
-                digitalObject: preservedDigitalObjectUri,
+                archivalGroup: preservedDigitalObjectUri,
                 submissionText: "You can write what you like here"
             }
         });
@@ -123,15 +124,15 @@ test.describe('Create a deposit and put some files in it', () => {
 
 
         expect(await depositWithDestination.json()).toEqual(expect.objectContaining({
-            "@id": newDeposit["@id"],  // verify that it's the same deposit!
-            digitalObject: preservedDigitalObjectUri
+            "id": newDeposit.id,  // verify that it's the same deposit!
+            archivalGroup: preservedDigitalObjectUri
         }));
         // We could have provided this information in the initial POST to create the deposit.
         // I suspect Goobi will know at the start where this should live in Preservation.
         // But some other scenarios might not know that during the initial assembly of files stage.
 
         // Now we can get the API to generate an ImportJob for us:
-        const diffJobGeneratorUri = newDeposit['@id'] + '/importjobs/diff';
+        const diffJobGeneratorUri = newDeposit.id + '/importjobs/diff';
 
 
         // ### API INTERACTION ###
@@ -153,7 +154,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // We will just execute the job as-is, by POSTing it:
 
         // ### API INTERACTION ###
-        const executeJobUri = newDeposit['@id'] + '/importjobs';
+        const executeJobUri = newDeposit.id + '/importjobs';
         console.log("Now execute the import job...");
         console.log("POST " + executeJobUri);
         const executeImportJobReq = await request.post(executeJobUri, {
@@ -164,9 +165,9 @@ test.describe('Create a deposit and put some files in it', () => {
         console.log(importJobResult);
         expect(importJobResult).toEqual(expect.objectContaining({
             type: 'ImportJobResult',
-            originalImportJobId: diffJobGeneratorUri,
+            originalImportJob: diffJobGeneratorUri, // <++ here
             status: 'waiting',
-            digitalObject: preservedDigitalObjectUri
+            archivalGroup: preservedDigitalObjectUri
         }));
         console.log("----");
         // There is a way of executing a diff import job in one step, without having to see the body
@@ -179,7 +180,7 @@ test.describe('Create a deposit and put some files in it', () => {
         // either "completed" or "completedWithErrors",
 
         console.log("... and poll it until it is either complete or completeWithErrors...");
-        await waitForStatus(importJobResult['@id'], /completed.*/, request);
+        await waitForStatus(importJobResult.id, /completed.*/, request);
         console.log("----");
 
         // Now we should have a preserved digital object in the repository:
@@ -193,14 +194,14 @@ test.describe('Create a deposit and put some files in it', () => {
         const digitalObject = await digitalObjectReq.json();
         console.log(digitalObject);
         expect(digitalObject).toEqual(expect.objectContaining({
-            '@id': preservedDigitalObjectUri,
-            type: 'DigitalObject',
+            'id': preservedDigitalObjectUri,
+            type: 'ArchivalGroup',
             name: '[Example title]', // This will have been read from the METS file  <mods:title>
-            version: expect.objectContaining({name: 'v1'}),  // and we expect it to be at version 1
+            version: expect.objectContaining({ocflVersion: 'v1'}),  // and we expect it to be at version 1
             binaries: expect.arrayContaining(
             [
                 // and it has a METS file in the root
-                expect.objectContaining({'@id': expect.stringContaining('10315.METS.xml')})
+                expect.objectContaining({'id': expect.stringContaining('10315.METS.xml')})
             ]),
             containers: expect.arrayContaining(
             [
@@ -211,10 +212,10 @@ test.describe('Create a deposit and put some files in it', () => {
                     name: 'objects',
                     binaries: expect.arrayContaining(
                         [
-                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_001.jpg')}),
-                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_002.jpg')}),
-                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_003.jpg')}),
-                            expect.objectContaining({'@id': expect.stringContaining('/objects/372705s_004.jpg')}),
+                            expect.objectContaining({'id': expect.stringContaining('/objects/372705s_001.jpg')}),
+                            expect.objectContaining({'id': expect.stringContaining('/objects/372705s_002.jpg')}),
+                            expect.objectContaining({'id': expect.stringContaining('/objects/372705s_003.jpg')}),
+                            expect.objectContaining({'id': expect.stringContaining('/objects/372705s_004.jpg')}),
                         ]
                     )
                 }
