@@ -168,8 +168,9 @@ test.describe('Update an Archival Group without exporting anything first', () =>
         console.log("-----");
 
         console.log("Now execute the SECOND import job...");
-        console.log("POST " + executeJobUri);
-        const executeImportJobReq2 = await request.post(executeJobUri, {
+        const executeJobUri2 = anotherDeposit.id + '/importjobs';
+        console.log("POST " + executeJobUri2);
+        const executeImportJobReq2 = await request.post(executeJobUri2, {
             data: importJob2
         });
         let importJobResult2 = await executeImportJobReq2.json();
